@@ -147,12 +147,7 @@ int main(void) {
         
     } // endfor  channels
     
-    
-    // ----------- need to have correct polarity  -------------
-    
-    // TODO!
-    
-    
+    // TODO: need to have correct polarity
     
     // ----------- adjust offset: search for two DAC settings with valid ADC response, then extrapolate  -------
     printf("Adjusting DC offsets (correct polarity required) ...\n");

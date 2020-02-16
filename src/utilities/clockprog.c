@@ -119,15 +119,8 @@ int main(int argc, char *argv[]) {
         return (-3);
     }
     
-    
-    
-    
     // ************************ I2C programming PLL *********************************
-    
-    /*      see CDCE813-Q1 data sheet and TI ClockPro utility
- 
-     */
-    
+    /* see CDCE813-Q1 data sheet and TI ClockPro utility */
     
     if (mode == 0) {
         for (reg = 0x00; reg < 0x20; reg++) {

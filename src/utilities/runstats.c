@@ -64,31 +64,8 @@ int main(void) {
     volatile unsigned int *mapped = (unsigned int *) map_addr;
     
     // ************** XIA code begins **************************
-    char *data = getenv("QUERY_STRING");
     mapped[AOUTBLOCK] = OB_RSREG;
-    if (data && strstr(data, "for_web")) {
-        unsigned int k;
-        char line[LINESZ];
-        FILE *fil;
-        
-        fil = fopen("../html/rspage.html", "r");
-        
-        while(fgets(line, LINESZ, fil)) {
-            printf("%s", line);
-            if (strstr(line, "d3.csv("))
-                break;
-        }
-
-        printf("  var csv = [                  \n");
-        read_print_runstats(0, 1, mapped);
-        printf("  ];                 \n");
-
-        while(fgets(line, LINESZ, fil))
-            printf("%s", line);
-        fclose(fil);
-    } else {
-        read_print_runstats(0, 0, mapped);
-    }
+    read_print_runstats(0, 0, mapped);
     mapped[AOUTBLOCK] = OB_IOREG;
     
     // clean up

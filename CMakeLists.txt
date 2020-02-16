@@ -17,7 +17,7 @@ endif ()
 # If user does not specify prefix we assign it to the project root directory
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     message(STATUS "Install Prefix not specified.")
-    get_filename_component(INSTALL_DIR ${PROJECT_SOURCE_DIR} REALPATH)
+    get_filename_component(INSTALL_DIR ${PROJECT_SOURCE_DIR}/install REALPATH)
     set(CMAKE_INSTALL_PREFIX ${INSTALL_DIR} CACHE PATH "Install Prefix" FORCE)
 endif ()
 message(STATUS "Installing to ${CMAKE_INSTALL_PREFIX}")
@@ -35,11 +35,16 @@ endif (CMAKE_BUILD_TYPE MATCHES "Debug")
 
 include(CMakeDependentOption)
 option(BUILD_TESTS "Builds programs designed to test the package. Including UnitTest++ test." OFF)
-option(USE_KAFKA "Builds acquire with Kafka support" OFF)
+option(USE_KAFKA "Builds acquire with Kafka support" ON)
+option(USE_NETDAQ "Builds network connected DAQ" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 find_package(Threads REQUIRED)
-find_package(Boost 1.65.1 REQUIRED COMPONENTS date_time chrono atomic program_options system thread)
+find_package(Boost 1.65.1 REQUIRED COMPONENTS date_time chrono atomic program_options system thread log python)
+
+if (USE_NETDAQ)
+    find_package(ZeroMQ REQUIRED)
+endif (USE_NETDAQ)
 
 if (USE_KAFKA)
     find_package(LibRDKafka 0.11.0 REQUIRED)

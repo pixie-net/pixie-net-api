@@ -1,45 +1,63 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, 
- * with or without modification, are permitted provided 
+ * Redistribution and use in source and binary forms,
+ * with or without modification, are permitted provided
  * that the following conditions are met:
  *
- *   * Redistributions of source code must retain the above 
- *     copyright notice, this list of conditions and the 
+ *   * Redistributions of source code must retain the above
+ *     copyright notice, this list of conditions and the
  *     following disclaimer.
- *   * Redistributions in binary form must reproduce the 
- *     above copyright notice, this list of conditions and the 
- *     following disclaimer in the documentation and/or other 
+ *   * Redistributions in binary form must reproduce the
+ *     above copyright notice, this list of conditions and the
+ *     following disclaimer in the documentation and/or other
  *     materials provided with the distribution.
  *   * Neither the name of XIA LLC
- *     nor the names of its contributors may be used to endorse 
- *     or promote products derived from this software without 
+ *     nor the names of its contributors may be used to endorse
+ *     or promote products derived from this software without
  *     specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
- * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
- * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
- * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
- * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
+
+
+/*
+ * NTS trigger/buffering output key:
+ * . - received INIT while waiting for START
+ * d - duplicate/overlap: accept range overlaps previously stored trigger
+ * f - flush a stored trigger
+ * i - insert trigger in used buffer slot
+ * s - store trigger
+ * u - unknown accept timestamp range
+ * x - overwrite a sent but not-(yet)-accepted trigger
+ * w - wrap next/back pointer
+ * W - wrap start/front pointer
+ */
 
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
+#include <signal.h>
+#include <errno.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/file.h>
@@ -48,8 +66,13 @@
 #include "PixieNetCommon.h"
 #include "PixieNetConfig.h"
 
+#include "nts.h"
+#include "log.h"
 
-int main(void) {
+#define NTS_POLL_INTERVAL 1
+
+
+int main(int argc, const char **argv) {
     int fd;
     void *map_addr;
     int size = 4096;
@@ -86,17 +109,36 @@ int main(void) {
     unsigned int BLbad[NCHANNELS];
     onlinebin = MAX_MCA_BINS / WEB_MCA_BINS;
     
+    const char *nts_host = "192.168.1.215";
+    unsigned int nts_triggered = 0, nts_sent = 0, nts_received = 0;
+    int nts_run = 1;
+    NTS *nts;
+    void *nts_event_data;
+    int poll_result;
+    
+    if (argc > 1) {
+        nts_host = argv[1];
+    }
+    
+    printf("NTS host: %s\n", nts_host);
+    
+    // ******************* set up logging ******************
+    if (pn_log_open("netdaq.log")) {
+        printf("Failed to open log\n");
+        return -1;
+    }
     
     // ******************* read ini file and fill struct with values ********************
+    
     PixieNetFippiConfig fippiconfig;        // struct holding the input parameters
-    const char *defaults_file = "../defaults.ini";
+    const char *defaults_file = "defaults.ini";
     int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0,
                                                   &fippiconfig);   // first load defaults, do not allow missing parameters
     if (rval != 0) {
         printf("Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval);
         return rval;
     }
-    const char *settings_file = "../settings.ini";
+    const char *settings_file = "settings.ini";
     rval = init_PixieNetFippiConfig_from_file(settings_file, 1,
                                               &fippiconfig);   // second override with user settings, do allow missing
     if (rval != 0) {
@@ -121,7 +163,7 @@ int main(void) {
     for (k = 0; k < NCHANNELS; k++) {
         SL[k] = (int) floor(fippiconfig.ENERGY_RISETIME[k] *
                             FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-//    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+        //    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
         Dgain[k] = fippiconfig.DIG_GAIN[k];
         TL[k] = BLOCKSIZE_400 * (int) floor(fippiconfig.TRACE_LENGTH[k] * ADC_CLK_MHZ /
                                             BLOCKSIZE_400);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
@@ -134,6 +176,8 @@ int main(void) {
         if (BLavg[k] > MAX_BLAVG) BLavg[k] = MAX_BLAVG;
         BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
     }
+    
+    
     
     // *************** PS/PL IO initialization *********************
     // open the device for PD register I/O
@@ -159,8 +203,21 @@ int main(void) {
     mapped = (unsigned int *) map_addr;
     
     // --------------------------------------------------------
+    // - Software triggering setup
+    // --------------------------------------------------------
+    
+    nts = nts_open(nts_host, 5591);
+    if (!nts) {
+        printf("Failed to open NetTimeSync software triggering\n");
+        return -5;
+    }
+    
+    printf("DAQ starting\n");
+    
+    // --------------------------------------------------------
     // ------------------- Main code begins --------------------
     // --------------------------------------------------------
+    
     
     // **********************  Compute Coefficients for E Computation  **********************
     dt = 1.0 / FILTER_CLOCK_MHZ;
@@ -180,12 +237,15 @@ int main(void) {
     revsn = hwinfo(mapped);
     
     // ********************** Run Start **********************
+    
+    
     NumPrevTraceBlks = 0;
     loopcount = 0;
     eventcount = 0;
-    starttime = time(NULL);                         // capture OS start time
-    if ((RunType == 0x500) || (RunType == 0x501) || (RunType == 0x502) ||
-        (RunType == 0x400)) {    // list mode runtypes
+    starttime = currenttime = time(NULL);                         // capture OS start time
+    pn_log("Run start");
+    
+    if ((RunType == 0x500) || (RunType == 0x501) || (RunType == 0x502) || (RunType == 0x400)) {    // list mode runtypes
         if (SyncT) mapped[ARTC_CLR] = 1;              // write to reset time counter
         mapped[AOUTBLOCK] = 2;
         startTS = mapped[AREALTIME];
@@ -240,11 +300,16 @@ int main(void) {
     
     // ********************** Run Loop **********************
     do {
+        pn_log_loop(loopcount);
+        
         //----------- Periodically read BL and update average -----------
         // this will be moved into the FPGA soon
         if (loopcount % BLREADPERIOD ==
             0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
+            pn_log("Update baseline");
             for (ch = 0; ch < NCHANNELS; ch++) {
+                Stopwatch sw = sw_start();
+                
                 // read raw BL sums
                 chaddr = ch * 16 + 16;
                 lsum = mapped[chaddr + CA_LSUMB];
@@ -269,23 +334,27 @@ int main(void) {
                         BLbad[ch] = BLbad[ch] + 1;
                     }     // end BLcut check
                 }       // end tsum >0 check
+                sw_check(&sw, "Baseline ch=%u", ch);
             }          // end for loop
         }             // end periodicity check
-        
-        
         // -----------poll for events -----------
         // if data ready. read out, compute E, increment MCA *********
-        
+        Stopwatch sw_stats = sw_start();
         evstats = mapped[AEVSTATS];
+        sw_check(&sw_stats, "AEVSTATS");
+        
         //   printf("EVstats 0x%x\n",evstats);
         if (evstats) {                      // if there are events in any channel
             for (ch = 0; ch < NCHANNELS; ch++) {
+                Stopwatch sw_lm = sw_start();
+                
                 R1 = 1 << ch;
                 if (evstats & R1) {     // check if there is an event in the FIFO
                     // read hit pattern and status info
                     chaddr = ch * 16 + 16;
                     hit = mapped[chaddr + CA_HIT];
                     //    printf("channel %d, hit 0x%x\n",ch,hit);
+                    pn_log("ch=%d hit=0x%x", ch, hit);
                     if (hit & Accept) {
                         // read data not needed for pure MCA runs
                         timeL = mapped[chaddr + CA_TSL];
@@ -395,8 +464,10 @@ int main(void) {
                         //  cfdout = cfdfrac + (cfdticks<<10);
                         //  printf("ts_max %d, cfdticks %d, trig_to_max %d, trig_to_cfd %d \n",ts_max, cfdticks, tmpS2, tmpS);
                         
+                        sw_check(&sw_lm, "List mode ch=%u", ch);
                         
                         // now store list mode data
+                        nts_event_data = NULL;
                         
                         if (RunType == 0x502) {
                             // 2D spectrum R vs E
@@ -417,25 +488,34 @@ int main(void) {
                         }    // 0x501
                         
                         if (RunType == 0x500) {
-                            // saving 8 headers +  waveforms, one entry per line
-                            fprintf(fil, "%u\n%d\n0x%X\n%u\n%u\n%u\n%u\n%u\n", eventcount, ch, hit, timeH, timeL,
-                                    energy, psa_R, cfdout);
-                            mapped[AOUTBLOCK] = 3;
-                            wf[0] = mapped[AWF0 + ch];  // dummy read?
-                            for (k = 0; k < (TL[ch] / 4); k++)
-                                //for( k=0; k < 10; k++)
-                            {
-                                wf[2 * k + 0] = mapped[AWF0 + ch];
-                                wf[2 * k + 1] = mapped[AWF0 + ch];
-                                // re-order 2 sample words from 32bit FIFO
-                                fprintf(fil, "%u\n", (wf[2 * k + 0] >> 16));
-                                fprintf(fil, "%u\n", (wf[2 * k + 0] & 0xFFFF));
-                                fprintf(fil, "%u\n", (wf[2 * k + 1] >> 16));
-                                fprintf(fil, "%u\n", (wf[2 * k + 1] & 0xFFFF));
+                            // For NTS, buffer waveforms with trigger metadata pending acceptance.
+                            // Also write files like startdaq.
+                            unsigned int *wfp = malloc(sizeof(unsigned int) * MAX_TL / 2); // two 16bit values per word
+                            
+                            if (wfp) {
+                                // saving 8 headers +  waveforms, one entry per line
+                                fprintf(fil, "%u\n%d\n0x%X\n%u\n%u\n%u\n%u\n%u\n", eventcount, ch, hit, timeH, timeL,
+                                        energy, psa_R, cfdout);
+                                mapped[AOUTBLOCK] = 3;
+                                wfp[0] = mapped[AWF0 + ch];  // dummy read?
+                                for (k = 0; k < (TL[ch] / 4); k++)
+                                    //for( k=0; k < 10; k++)
+                                {
+                                    wfp[2 * k + 0] = mapped[AWF0 + ch];
+                                    wfp[2 * k + 1] = mapped[AWF0 + ch];
+                                    
+                                    // re-order 2 sample words from 32bit FIFO
+                                    fprintf(fil, "%u\n", (wfp[2 * k + 0] >> 16));
+                                    fprintf(fil, "%u\n", (wfp[2 * k + 0] & 0xFFFF));
+                                    fprintf(fil, "%u\n", (wfp[2 * k + 1] >> 16));
+                                    fprintf(fil, "%u\n", (wfp[2 * k + 1] & 0xFFFF));
+                                }
+                                mapped[AOUTBLOCK] = OB_EVREG;
                                 
-                                
+                                nts_event_data = wfp;
+                            } else {
+                                printf("E: no mem for 0x500 waveform\n");
                             }
-                            mapped[AOUTBLOCK] = OB_EVREG;
                         }    // 0x500
                         
                         if (RunType == 0x400) {
@@ -475,6 +555,13 @@ int main(void) {
                             fwrite(wf, TL[ch] / 2, 4, fil);
                         }      // 0x400
                         
+                        // Send triggers to the NTS DM.
+                        unsigned long long ts = ((unsigned long long) timeH << 32) + timeL;
+                        nts_triggered++;
+                        pn_log("Trigger t=%llu n=%u ch=%u", ts, nts_triggered, ch);
+                        nts_trigger(nts, revsn, ch, ts, currenttime, nts_event_data);
+                        nts_sent++;
+                        
                         eventcount++;
                     } else { // event not acceptable (piled up )
                         R1 = mapped[chaddr +
@@ -489,7 +576,9 @@ int main(void) {
         // ----------- Periodically save MCA, PSA, and Run Statistics  -----------
         
         if (loopcount % PollTime == 0) {
-            // 1) Run Statistics 
+            pn_log("Save statistics");
+            
+            // 1) Run Statistics
             mapped[AOUTBLOCK] = OB_RSREG;
             
             // for debug purposes, print to std out so we see what's going on
@@ -541,17 +630,31 @@ int main(void) {
                 }  // biny loop
                 
                 fclose(filmca);
-            }  // runtype 0x502       
+            }  // runtype 0x502
+        }
+        
+        // Receive NTS accept/reject decisions
+        while (nts_sent % NTS_POLL_INTERVAL == 0 && (poll_result = nts_poll(nts)) != 0) {
+            pn_log("Poll ret=%d", poll_result);
+            if (poll_result > 0 && poll_result != NTS_IGNORE) {
+                nts_received += poll_result;
+            } else if (poll_result < 0) {
+                nts_run = 0;
+            }
         }
         
         // ----------- loop housekeeping -----------
         
         loopcount++;
         currenttime = time(NULL);
-    } while (currenttime <= starttime + ReqRunTime); // run for a fixed time
+    } while (currenttime <= starttime + ReqRunTime && nts_run); // run for a fixed time
     //     } while (eventcount <= 20); // run for a fixed number of events
     
+    pn_log_loop(UINT_MAX);
+    
     // ********************** Run Stop **********************
+    printf("Stopping the run\n");
+    
     // clear RunEnable bit to stop run
     mapped[ACSRIN] = 0;
     // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
@@ -614,6 +717,21 @@ int main(void) {
         fwrite(buffer2, 1, CHAN_HEAD_LENGTH_400 * 2, fil);
     }
     
+    // Drain NTS accept/reject decisions
+    while ((poll_result = nts_poll(nts)) > 0) {
+        if (poll_result != NTS_IGNORE) {
+            nts_received += poll_result;
+        }
+    }
+    
+    // Clean up NTS networking.
+    printf("Cleaning up trigger sockets\n");
+    nts_destroy(&nts);
+    printf("NTS triggered %u, sent %u, accepted %u\n", nts_triggered, nts_sent, nts_received);
+    
+    fflush(stdout);
+    
+    pn_log_close();
     
     if ((RunType == 0x500) || (RunType == 0x501) || (RunType == 0x502) || (RunType == 0x400)) {
         fclose(fil);

@@ -4,8 +4,7 @@
 *.cgi
 temp0_raw
 data/sample/
-index.lighttpd.html
-index.nginx-debian.html
+doc/jupyter
 
 ## Executables
 acquire

@@ -1,12 +1,5 @@
-add_executable(gettraces.cgi gettraces.c)
-install(TARGETS gettraces.cgi DESTINATION assets/cgi)
-
 add_executable(pollcsr pollcsr.c)
 install(TARGETS pollcsr DESTINATION bin)
-
-add_executable(runstats.cgi runstats.c)
-target_link_libraries(runstats.cgi PixieNetCommon_STATIC m)
-install(TARGETS runstats.cgi DESTINATION assets/cgi)
 
 FOREACH (prog findsettings clockprog)
     add_executable(${prog} ${prog}.c)
@@ -25,10 +18,17 @@ FOREACH (prog progfippi startdaq coincdaq)
 ENDFOREACH (prog)
 
 add_executable(acquire acquire.cpp)
-set(BOOST_ACQ_LIBS boost_date_time boost_chrono boost_atomic boost_program_options boost_system boost_thread rt)
+set(BOOST_ACQ_LIBS boost_date_time boost_chrono boost_atomic boost_program_options boost_system boost_thread boost_python rt)
 if (USE_KAFKA)
     set(KAFKA_LIBS ssl crypto rdkafka cppkafka)
     add_definitions(-DUSE_KAFKA)
 endif (USE_KAFKA)
 target_link_libraries(acquire PixieNetCommon_STATIC PixieNetConfig_STATIC m ${BOOST_ACQ_LIBS} ${KAFKA_LIBS})
 install(TARGETS acquire DESTINATION bin)
+
+if (USE_NETDAQ)
+    set(NETDAQ_BOOST_LIBS boost_log)
+    add_executable(netdaq log.c netdaq.c nts.c)
+    target_link_libraries(netdaq PixieNetCommon_STATIC PixieNetConfig_STATIC ${NETDAQ_BOOST_LIBS} zmq)
+    install(TARGETS netdaq DESTINATION bin)
+endif(USE_NETDAQ)
