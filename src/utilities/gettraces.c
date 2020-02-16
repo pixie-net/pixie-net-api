@@ -86,44 +86,15 @@ int main(void) {
         adc2[k] = mapped[AADC2] & 0xFFFF;
     for (k = 0; k < NTRACE_SAMPLES; k++)
         adc3[k] = mapped[AADC3] & 0xFFFF;
-
-    char *data = getenv("QUERY_STRING");
-    FILE *fil;
-    if (data && strstr(data, "for_web")) {
-        char line[LINESZ];
-        // read the webpage template and print
-        fil = fopen("../assets/html/get_traces.html", "r");
     
-        while(fgets(line, LINESZ, fil)) {
-            printf("%s", line);
-            if (strstr(line, "document.getElementById"))
-                break;
-        }
-        
-        fgets(line, LINESZ, fil);        // read from template, the line listing the ADC.csv file. This is not printed
-        printf("       \"sample,adc0,adc1,adc2,adc3\\n\"  +  \n");
-
-        // print the data
-        for (k = 0; k < NTRACE_SAMPLES; k++) {
-            printf("      \"%d,%d,%d,%d,%d\\n \"  + \n", k, adc0[k], adc1[k], adc2[k], adc3[k]);
-        }
-        // comma, not + requred in last line
-        printf("      \"%d,%d,%d,%d,%d\\n \"  ,  \n", k, adc0[k - 1], adc1[k - 1], adc2[k - 1], adc3[k - 1]);
+    // open the output file
+    FILE *fil = fopen("ADC.csv", "w");
+    fprintf(fil, "sample,adc0,adc1,adc2,adc3\n");
     
-        // finish printing the webpage
-        while(fgets(line, LINESZ, fil))
-            printf("%s", line);
-    } else {
-        // open the output file
-        fil = fopen("ADC.csv", "w");
-        fprintf(fil, "sample,adc0,adc1,adc2,adc3\n");
-
-        //  write to file
-        for (k = 0; k < NTRACE_SAMPLES; k++) {
-            fprintf(fil, "%d,%d,%d,%d,%d\n ", k, adc0[k], adc1[k], adc2[k], adc3[k]);
-        }
-    }
-
+    //  write to file
+    for (k = 0; k < NTRACE_SAMPLES; k++)
+        fprintf(fil, "%d,%d,%d,%d,%d\n ", k, adc0[k], adc1[k], adc2[k], adc3[k]);
+    
     munmap(map_addr, size);
     close(fd);
     fclose(fil);

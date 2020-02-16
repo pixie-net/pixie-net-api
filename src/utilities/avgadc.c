@@ -44,7 +44,6 @@
 #include "PixieNetConfig.h"
 
 int main(void) {
-    
     int fd;
     void *map_addr;
     int size = 4096;
@@ -92,10 +91,6 @@ int main(void) {
     printf("maxwait for timeout: %d \n", maxwait);
     printf("scale factors %f %f %f %f \n", scale[0], scale[1], scale[2], scale[3]);
     
-    
-    
-    
-    
     // *************** PS/PL IO initialization *********************
     // open the device for PD register I/O
     fd = open("/dev/uio0", O_RDWR);
@@ -113,10 +108,7 @@ int main(void) {
     
     mapped = (unsigned int *) map_addr;
     
-    
     // **************** XIA code begins **********************
-    
-    
     // 1. arm trigger
     mapped[AOUTBLOCK] = OB_IOREG;
     mapped[ACOUNTER_CLR] = 1;          // any write to COUNTER_CLR arms the trigger for capturing averaged samples
@@ -134,8 +126,6 @@ int main(void) {
         printf("Error: Waiting for trigger timed out \n");
         return -1;
     }
-    
-    
     
     // 3. read 4K samples from ADC register 
     
@@ -173,7 +163,6 @@ int main(void) {
         for (k = 0; k < NAVG_TRACE_SAMPLES; k++)
             adc3[k] = (k & 0x0003) + 3;
     
-    
     // 4. open the output file
     fil = fopen("ADCAVG.csv", "w");
     fprintf(fil, "sample,adc0,adc1,adc2,adc3\n");
@@ -182,7 +171,6 @@ int main(void) {
     for (k = 0; k < NAVG_TRACE_SAMPLES; k++) {
         fprintf(fil, "%d,%d,%d,%d,%d\n ", k, adc0[k], adc1[k], adc2[k], adc3[k]);
     }
-    
     
     // clean up
     fclose(fil);

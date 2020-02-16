@@ -36,17 +36,13 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
-#include <signal.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/file.h>
-// need to compile with -lm option
 
 #include "PixieNetDefs.h"
 #include "PixieNetCommon.h"
@@ -54,7 +50,6 @@
 
 
 int main(void) {
-    
     int fd;
     void *map_addr;
     int size = 4096;
@@ -93,16 +88,15 @@ int main(void) {
     
     
     // ******************* read ini file and fill struct with values ********************
-    
     PixieNetFippiConfig fippiconfig;        // struct holding the input parameters
-    const char *defaults_file = "defaults.ini";
+    const char *defaults_file = "../defaults.ini";
     int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0,
                                                   &fippiconfig);   // first load defaults, do not allow missing parameters
     if (rval != 0) {
         printf("Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval);
         return rval;
     }
-    const char *settings_file = "settings.ini";
+    const char *settings_file = "../settings.ini";
     rval = init_PixieNetFippiConfig_from_file(settings_file, 1,
                                               &fippiconfig);   // second override with user settings, do allow missing
     if (rval != 0) {
@@ -141,8 +135,6 @@ int main(void) {
         BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
     }
     
-    
-    
     // *************** PS/PL IO initialization *********************
     // open the device for PD register I/O
     fd = open("/dev/uio0", O_RDWR);
@@ -170,7 +162,6 @@ int main(void) {
     // ------------------- Main code begins --------------------
     // --------------------------------------------------------
     
-    
     // **********************  Compute Coefficients for E Computation  **********************
     dt = 1.0 / FILTER_CLOCK_MHZ;
     for (k = 0; k < NCHANNELS; k++) {
@@ -189,7 +180,6 @@ int main(void) {
     revsn = hwinfo(mapped);
     
     // ********************** Run Start **********************
-    
     NumPrevTraceBlks = 0;
     loopcount = 0;
     eventcount = 0;
@@ -250,7 +240,6 @@ int main(void) {
     
     // ********************** Run Loop **********************
     do {
-        
         //----------- Periodically read BL and update average -----------
         // this will be moved into the FPGA soon
         if (loopcount % BLREADPERIOD ==
@@ -562,10 +551,7 @@ int main(void) {
     } while (currenttime <= starttime + ReqRunTime); // run for a fixed time
     //     } while (eventcount <= 20); // run for a fixed number of events
     
-    
-    
     // ********************** Run Stop **********************
-    
     // clear RunEnable bit to stop run
     mapped[ACSRIN] = 0;
     // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
