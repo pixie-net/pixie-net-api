@@ -40,7 +40,7 @@ option(USE_NETDAQ "Builds network connected DAQ" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 find_package(Threads REQUIRED)
-find_package(Boost 1.65.1 REQUIRED COMPONENTS date_time chrono atomic program_options system thread log)
+find_package(Boost 1.65.1 REQUIRED COMPONENTS date_time chrono atomic program_options system thread log python)
 
 if (USE_NETDAQ)
     find_package(ZeroMQ REQUIRED)
