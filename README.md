@@ -1,4 +1,17 @@
-# Pixie-Net Software
+# Pixie-Net API
+This project provides an application interface to the Pixie-Net. We provide the following functionality in c libraries:
+* Setup FPGA
+* Read and Write configuration files
+* Acquire data from module
+* Write data to 
+  * disk
+  * Kafka
+  * ZeroMQ
+
+A RESTful interface provides access to the underlying C libraries for web 
+applications. We used Flask for the rest interface. The web interface allows
+external programs to access the c libraries without significant overhead.  
+
 We forked this software from XIA LLC., and is available [here](http://support.xia.com/default.asp?W772). 
 
 # Notice
