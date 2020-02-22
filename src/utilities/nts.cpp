@@ -50,9 +50,9 @@ void nts_mark_event(const char *s) {
  */
 
 NTSBuffer *nts_buffer_create() {
-    NTSBuffer *q = calloc(1, sizeof(NTSBuffer));
+    NTSBuffer *q = (NTSBuffer *) calloc(1, sizeof(NTSBuffer));
     if (!q)
-        return NULL;
+        return nullptr;
     
     q->size = NTS_MAX_WAIT;
     q->next = 0;
@@ -74,7 +74,7 @@ void nts_buffer_destroy(NTSBuffer **p) {
     }
     
     free(*p);
-    *p = NULL;
+    *p = nullptr;
 }
 
 static void nts_start_incr(NTSBuffer *q) {
@@ -135,7 +135,7 @@ void nts_destroy(NTS **nts) {
         zmq_ctx_destroy(p->zctx);
     nts_buffer_destroy(&p->sent);
     free(p);
-    *nts = NULL;
+    *nts = nullptr;
 }
 
 /*
@@ -146,19 +146,19 @@ void nts_destroy(NTS **nts) {
 NTS *nts_open(const char *dm_host, int dm_port) {
     int rc;
     
-    NTS *nts = malloc(sizeof(NTS));
+    NTS *nts = (NTS *) malloc(sizeof(NTS));
     if (!nts) {
         printf("No memory for NTS\n");
-        return NULL;
+        return nullptr;
     }
     
-    nts->sent = nts->zctx = nts->dm_ctrl = nts->daq_trigger = NULL;
+    nts->sent = nts->zctx = nts->dm_ctrl = nts->daq_trigger = nullptr;
     
     nts->zctx = zmq_ctx_new();
     if (!nts->zctx) {
         printf("Failed opening zmq context\n");
         nts_destroy(&nts);
-        return NULL;
+        return nullptr;
     }
     
     printf("Connecting to DM at %s:%d\n", dm_host, dm_port);
@@ -167,7 +167,7 @@ NTS *nts_open(const char *dm_host, int dm_port) {
     if (!nts->dm_ctrl) {
         printf("Failed to open SUB socket for control\n");
         nts_destroy(&nts);
-        return NULL;
+        return nullptr;
     }
     
     char endpoint[100];
@@ -176,7 +176,7 @@ NTS *nts_open(const char *dm_host, int dm_port) {
     if (rc < 0) {
         printf("Connecting DM errno=%d\n", errno);
         nts_destroy(&nts);
-        return NULL;
+        return nullptr;
     }
     zmq_setsockopt(nts->dm_ctrl, ZMQ_SUBSCRIBE, "", 0);
     
@@ -199,7 +199,7 @@ NTS *nts_open(const char *dm_host, int dm_port) {
     if (!nts->daq_trigger) {
         printf("Failed to open PUSH socket for triggers\n");
         nts_destroy(&nts);
-        return NULL;
+        return nullptr;
     }
     
     sprintf(endpoint, "tcp://%s:%d", dm_host, dm_port + 1);
@@ -214,7 +214,7 @@ NTS *nts_open(const char *dm_host, int dm_port) {
     if (!nts->sent) {
         printf("Failed creating sent queue\n");
         nts_destroy(&nts);
-        return NULL;
+        return nullptr;
     }
     
     printf("Waiting for DM START\n");
@@ -265,7 +265,7 @@ void nts_trigger(NTS *nts, unsigned int revsn, int ch, unsigned long long ts,
 void nts_trigger_close(Trigger *t) {
     if (t->data) {
         free(t->data);
-        t->data = NULL;
+        t->data = nullptr;
     }
 }
 

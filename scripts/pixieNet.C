@@ -10,7 +10,7 @@
 #include <TGButton.h>
 #include <TH1.h>
 
-#include "PixieNetDefs.h"
+#include "PixieNetDefs.hpp"
 
 class MainFrame : public TGMainFrame {
 private:

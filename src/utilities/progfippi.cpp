@@ -32,56 +32,15 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <time.h>
-#include <signal.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/mman.h>
+#include <iostream>
 
-#include "PixieNetDefs.h"
+#include "ProgramFippi.hpp"
 
-
-int main(void) {
-    
-    int fd;
-    void *map_addr;
-    int size = 4096;
-    volatile unsigned int *mapped;
-    unsigned int mval;
-    
-    
-    // *************** PS/PL IO initialization *********************
-    // open the device for PD register I/O
-    fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        std::cout << "You must provide a configuration file for programming the FPGA!"
+                  << std::endl << "USAGE: progfippi /path/to/ini/config/file";
         return 1;
     }
-    
-    map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return 1;
-    }
-    
-    mapped = (unsigned int *) map_addr;
-    
-    // ************** XIA code begins **************************
-    
-    mapped[AOUTBLOCK] = OB_RSREG;
-    mval = mapped[ACSROUT + 1] & 0xFFFF;
-    mapped[AOUTBLOCK] = OB_IOREG;
-    printf("0x%04X\n", mval);
-    
-    // clean up
-    munmap(map_addr, size);
-    close(fd);
-    return mval;
+    ProgramFippi().program_fippi(argv[1]);
 }

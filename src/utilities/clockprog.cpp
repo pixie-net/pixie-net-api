@@ -50,8 +50,8 @@
 // gcc -Wall clockprog.c PixieNetCommon.o -o clockprog
 
 
-#include "PixieNetDefs.h"
-#include "PixieNetCommon.h"
+#include "PixieNetDefs.hpp"
+#include "PixieNetCommon.hpp"
 
 int main(int argc, char *argv[]) {
     

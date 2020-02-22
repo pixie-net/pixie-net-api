@@ -38,7 +38,7 @@
 
 #include <stdint.h>
 
-#include "PixieNetDefs.h"
+#include "PixieNetDefs.hpp"
 
 /*  Functions and structs in this header are mainly concerned with configuring 
     the FPGA, data runs, and eventually reading other information out from the

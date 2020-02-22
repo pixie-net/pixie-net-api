@@ -62,9 +62,9 @@
 #include <sys/mman.h>
 #include <sys/file.h>
 
-#include "PixieNetDefs.h"
-#include "PixieNetCommon.h"
-#include "PixieNetConfig.h"
+#include "PixieNetDefs.hpp"
+#include "PixieNetCommon.hpp"
+#include "PixieNetConfig.hpp"
 
 #include "nts.h"
 #include "log.h"
@@ -490,7 +490,7 @@ int main(int argc, const char **argv) {
                         if (RunType == 0x500) {
                             // For NTS, buffer waveforms with trigger metadata pending acceptance.
                             // Also write files like startdaq.
-                            unsigned int *wfp = malloc(sizeof(unsigned int) * MAX_TL / 2); // two 16bit values per word
+                            unsigned int *wfp = (unsigned int*)malloc(sizeof(unsigned int) * MAX_TL / 2); // two 16bit values per word
                             
                             if (wfp) {
                                 // saving 8 headers +  waveforms, one entry per line

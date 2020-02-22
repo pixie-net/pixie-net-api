@@ -49,7 +49,6 @@
 #include <sys/file.h>
 #include <math.h>
 #include <stdint.h>
-// need to compile with -lm option
 
 #include <fstream>
 #include <iostream>
@@ -68,13 +67,9 @@
 #include "cppkafka/configuration.h"
 #endif
 
-#include "PixieNetDefs.h"
-
-#include "PixieNetConfig.h"
-
-extern "C" {
-#include "PixieNetCommon.h"
-}
+#include "PixieNetDefs.hpp"
+#include "PixieNetConfig.hpp"
+#include "PixieNetCommon.hpp"
 
 using namespace std;
 

@@ -44,9 +44,9 @@
 #include <sys/mman.h>
 #include <sys/file.h>
 
-#include "PixieNetDefs.h"
-#include "PixieNetCommon.h"
-#include "PixieNetConfig.h"
+#include "PixieNetDefs.hpp"
+#include "PixieNetCommon.hpp"
+#include "PixieNetConfig.hpp"
 
 
 int main(void) {

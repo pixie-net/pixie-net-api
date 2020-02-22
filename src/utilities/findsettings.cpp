@@ -32,25 +32,17 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <cstdlib>
 #include <fcntl.h>
-#include <time.h>
-#include <signal.h>
-#include <errno.h>
-#include <string.h>
 #include <sys/mman.h>
-#include <math.h>
-// need to compile with -lm option
+#include <cmath>
 
-#include "PixieNetDefs.h"
-#include "PixieNetCommon.h"
+#include "PixieNetDefs.hpp"
+#include "PixieNetCommon.hpp"
 
-
-int main(void) {
+int main() {
     
     int fd;
     void *map_addr;

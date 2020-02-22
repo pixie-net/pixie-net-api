@@ -44,8 +44,8 @@
 #include <string.h>
 #include <sys/mman.h>
 
-#include "PixieNetDefs.h"
-#include "PixieNetCommon.h"
+#include "PixieNetDefs.hpp"
+#include "PixieNetCommon.hpp"
 
 
 void I2Cstart(volatile unsigned int *mapped) {

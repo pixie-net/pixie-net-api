@@ -32,39 +32,26 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <time.h>
-#include <signal.h>
-#include <assert.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <stdint.h>
-#include <inttypes.h>
-
 #include <map>
 #include <vector>
 #include <string>
-#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <algorithm>
 
+#include <cstdio>
+#include <cstdlib>
+
+#include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/file.h>
 
-#include "PixieNetDefs.h"
-#include "PixieNetConfig.h"
+#include "PixieNetDefs.hpp"
+#include "PixieNetConfig.hpp"
 
 using namespace std;
 
-
 namespace {
-    
     void split(std::vector<std::string> &resutls,
                const std::string &input, const char *delims) {
         resutls.clear();
@@ -102,10 +89,10 @@ namespace {
     
     
     // trim from start
-    static inline std::string &ltrim(std::string &s) {
+    inline std::string &ltrim(std::string &s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
         
-        if (s.size()) {
+        if (s.empty()) {
             const size_t pos = s.find_first_not_of('\0');
             if (pos != 0 && pos != string::npos)
                 s.erase(s.begin(), s.begin() + pos);
@@ -117,7 +104,7 @@ namespace {
     }
     
     // trim from end
-    static inline std::string &rtrim(std::string &s) {
+    inline std::string &rtrim(std::string &s) {
         s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
         
         const size_t pos = s.find_last_not_of('\0');
@@ -883,7 +870,7 @@ PixieNetFippiConfig InitializeFippi(const char *settings) {
     PixieNetFippiConfig fippiconfig;
     
     // Do not allow any missing entries in defaults.ini.
-    const char *defaults_file = "defaults.ini";
+    const char *defaults_file = settings;
     int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0, &fippiconfig);
     if (rval != 0) {
         printf("Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval);
@@ -891,7 +878,7 @@ PixieNetFippiConfig InitializeFippi(const char *settings) {
     }
     
     // second override with user settings, do allow missing
-    const char *settings_file = "settings.ini";
+    const char *settings_file = settings;
     rval = init_PixieNetFippiConfig_from_file(settings_file, 1, &fippiconfig);
     if (rval != 0) {
         printf("Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval);
@@ -917,7 +904,7 @@ int OpenPdFileDescription() {
 }
 
 unsigned int *MapMemoryAddress(int fd, int size) {
-    void *map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    void *map_addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     
     if (map_addr == MAP_FAILED) {
         perror("Failed to mmap");

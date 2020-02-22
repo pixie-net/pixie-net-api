@@ -48,9 +48,9 @@
 #include <sys/file.h>
 // need to compile with -lm option
 
-#include "PixieNetDefs.h"
-#include "PixieNetCommon.h"
-#include "PixieNetConfig.h"
+#include "PixieNetDefs.hpp"
+#include "PixieNetCommon.hpp"
+#include "PixieNetConfig.hpp"
 
 
 int main(void) {
