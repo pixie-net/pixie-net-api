@@ -56,29 +56,10 @@
 
 
 int main(void) {
-    int fd;
-    void *map_addr;
     int size = 4096;
-    volatile unsigned int *mapped;
     int k, addr;
     
-    
-    // ******************* read ini file and fill struct with values ********************
-    PixieNetFippiConfig fippiconfig;        // struct holding the input parameters
-    const char *defaults_file = "../defaults.ini";
-    int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0,
-                                                  &fippiconfig);   // first load defaults, do not allow missing parameters
-    if (rval != 0) {
-        printf("Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval);
-        return rval;
-    }
-    const char *settings_file = "../settings.ini";
-    rval = init_PixieNetFippiConfig_from_file(settings_file, 1,
-                                              &fippiconfig);   // second override with user settings, do allow missing
-    if (rval != 0) {
-        printf("Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval);
-        return rval;
-    }
+    PixieNetFippiConfig fippiconfig = InitializeFippi("settings.ini");
     
     unsigned int mval, dac;
     unsigned int CW, FR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
@@ -89,26 +70,9 @@ int main(void) {
     
     // *************** PS/PL IO initialization *********************
     // open the device for PD register I/O
-    fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
-        return 1;
-    }
-    
-    //Lock the PL address space so multiple programs cant step on eachother.
-    if (flock(fd, LOCK_EX | LOCK_NB)) {
-        printf("Failed to get file lock on /dev/uio0\n");
-        return 1;
-    }
-    
-    map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return 1;
-    }
-    
-    mapped = (unsigned int *) map_addr;
+    int fd = OpenPdFileDescription();
+    unsigned int *map_addr = MapMemoryAddress(fd, size);
+    volatile unsigned int *mapped = map_addr;
     
     // ******************* XIA code begins ********************
     // first, set CSR run control options

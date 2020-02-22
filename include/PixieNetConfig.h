@@ -297,6 +297,12 @@ int init_PixieNetFippiConfig_from_file(const char *const filename,
                                        int ignore_missing,
                                        struct PixieNetFippiConfig *config);
 
+PixieNetFippiConfig InitializeFippi(const char *settings);
+
+int OpenPdFileDescription();
+
+unsigned int *MapMemoryAddress(int fd, int size);
+
 
 #ifdef __cplusplus
 }

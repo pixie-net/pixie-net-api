@@ -55,6 +55,7 @@
 #include <iostream>
 #include <algorithm>
 
+#include <sys/file.h>
 
 #include "PixieNetDefs.h"
 #include "PixieNetConfig.h"
@@ -877,3 +878,50 @@ int init_PixieNetFippiConfig_from_file(const char *const filename,
     
     return 0;
 }//init_PixieNetFippiConfig_from_file(...)
+
+PixieNetFippiConfig InitializeFippi(const char *settings) {
+    PixieNetFippiConfig fippiconfig;
+    
+    // Do not allow any missing entries in defaults.ini.
+    const char *defaults_file = "defaults.ini";
+    int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0, &fippiconfig);
+    if (rval != 0) {
+        printf("Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval);
+        throw invalid_argument("Failed to parse FPGA settings from defaults.ini");
+    }
+    
+    // second override with user settings, do allow missing
+    const char *settings_file = "settings.ini";
+    rval = init_PixieNetFippiConfig_from_file(settings_file, 1, &fippiconfig);
+    if (rval != 0) {
+        printf("Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval);
+        throw invalid_argument("Failed to parse FPGA settings from defaults.ini");
+    }
+    return fippiconfig;
+}
+
+int OpenPdFileDescription() {
+    // open the device for PD register I/O
+    int fd = open("/dev/uio0", O_RDWR);
+    if (fd < 0) {
+        perror("Failed to open devfile");
+        return 1;
+    }
+    
+    //Lock the PL address space so multiple programs cant step on each other.
+    if (flock(fd, LOCK_EX | LOCK_NB)) {
+        printf("Failed to get file lock on /dev/uio0\n");
+        return 1;
+    }
+    return fd;
+}
+
+unsigned int *MapMemoryAddress(int fd, int size) {
+    void *map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    
+    if (map_addr == MAP_FAILED) {
+        perror("Failed to mmap");
+        return nullptr;
+    }
+    return (unsigned int *) map_addr;
+}
