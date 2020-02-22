@@ -1,2 +1,2 @@
-add_subdirectory(pixie-net)
+add_subdirectory(api)
 add_subdirectory(utilities)
