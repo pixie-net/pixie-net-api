@@ -30,6 +30,9 @@
  */
 class FippiConfiguration {
 public:
+    ///Default constructor that sets the initial values of all parameters
+    FippiConfiguration();
+    
     //Currently unused parameters.
     //int SYS_U8, SYS_U7, SYS_U6, SYS_U5, SYS_U4, SYS_U3, SYS_U2, SYS_U1, SYS_U0;
     

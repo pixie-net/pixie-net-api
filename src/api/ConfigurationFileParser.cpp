@@ -47,15 +47,8 @@ using namespace std;
 
 FippiConfiguration ConfigurationFileParser::parse_config(const char *settings) {
     FippiConfiguration fippiconfig;
-    
-    // Do not allow any missing entries in defaults.ini.
-    const char *defaults_file = settings;
-    int rval = init_FippiConfiguration_from_file(defaults_file, 0, &fippiconfig);
-    if (rval != 0)
-        throw invalid_argument("Failed to parse FPGA settings from defaults.ini");
-    
     const char *settings_file = settings;
-    rval = init_FippiConfiguration_from_file(settings_file, 1, &fippiconfig);
+    unsigned int rval = init_FippiConfiguration_from_file(settings_file, 1, &fippiconfig);
     if (rval != 0)
         throw invalid_argument("Failed to parse FPGA settings from settings.ini");
     return fippiconfig;
@@ -677,9 +670,6 @@ int ConfigurationFileParser::init_FippiConfiguration_from_file(const char *const
     if (ret == 0)
         for (int i = 0; i < NCHANNELS; ++i)
             config->CHANNEL_CSRA[i] = SetOrClrBit(15, config->CHANNEL_CSRA[i], bits[i]);
-    
-    //   for( int i = 0; i < NCHANNELS; ++i )
-    //     printf("CHANNEL_CSRA = 0x%x\n",config->CHANNEL_CSRA[i]);
     
     //CSRC
     ret = parse_multiple_bool_val(label_to_values, "CCSRC_VETO_REJHI_00", bits, ignore_missing);
