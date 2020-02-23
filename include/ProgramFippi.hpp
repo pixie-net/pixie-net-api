@@ -6,10 +6,11 @@
 #ifndef PIXIE_NET_PROGRAMFIPPI_HPP
 #define PIXIE_NET_PROGRAMFIPPI_HPP
 
+#include "FippiConfiguration.hpp"
 
 class ProgramFippi {
 public:
-    int program_fippi(const char *settings);
+    int program_fippi(const FippiConfiguration &fippiconfig);
 };
 
 

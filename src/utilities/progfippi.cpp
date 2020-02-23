@@ -34,6 +34,7 @@
  *----------------------------------------------------------------------*/
 #include <iostream>
 
+#include "ConfigurationFileParser.hpp"
 #include "ProgramFippi.hpp"
 
 int main(int argc, char *argv[]) {
@@ -42,5 +43,5 @@ int main(int argc, char *argv[]) {
                   << std::endl << "USAGE: progfippi /path/to/ini/config/file";
         return 1;
     }
-    ProgramFippi().program_fippi(argv[1]);
+    ProgramFippi().program_fippi(ConfigurationFileParser().parse_config(argv[1]));
 }

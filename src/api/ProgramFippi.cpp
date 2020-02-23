@@ -11,15 +11,12 @@
 #include <sys/file.h>
 #include <unistd.h>
 
-#include "ConfigurationFileParser.hpp"
 #include "PixieNetCommon.hpp"
 #include "PixieNetConfig.hpp"
 
-int ProgramFippi::program_fippi(const char *settings) {
+int ProgramFippi::program_fippi(const FippiConfiguration &fippiconfig) {
     int size = 4096;
     int k, addr;
-    
-    FippiConfiguration fippiconfig = ConfigurationFileParser().parse_config(settings);
     
     unsigned int mval, dac;
     unsigned int CW, FR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
