@@ -45,17 +45,17 @@
 
 using namespace std;
 
-PixieNetFippiConfig ConfigurationFileParser::parse_config(const char *settings) {
-    PixieNetFippiConfig fippiconfig;
+FippiConfiguration ConfigurationFileParser::parse_config(const char *settings) {
+    FippiConfiguration fippiconfig;
     
     // Do not allow any missing entries in defaults.ini.
     const char *defaults_file = settings;
-    int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0, &fippiconfig);
+    int rval = init_FippiConfiguration_from_file(defaults_file, 0, &fippiconfig);
     if (rval != 0)
         throw invalid_argument("Failed to parse FPGA settings from defaults.ini");
     
     const char *settings_file = settings;
-    rval = init_PixieNetFippiConfig_from_file(settings_file, 1, &fippiconfig);
+    rval = init_FippiConfiguration_from_file(settings_file, 1, &fippiconfig);
     if (rval != 0)
         throw invalid_argument("Failed to parse FPGA settings from settings.ini");
     return fippiconfig;
@@ -458,9 +458,9 @@ int ConfigurationFileParser::SetOrClrBit(int bit, int value,
 }
 
 
-int ConfigurationFileParser::init_PixieNetFippiConfig_from_file(const char *const filename,
+int ConfigurationFileParser::init_FippiConfiguration_from_file(const char *const filename,
                                                                 int ignore_missing,
-                                                                struct PixieNetFippiConfig *config) {
+                                                                struct FippiConfiguration *config) {
     // if ignore_missing == 1, missing parameters (parse_XXX returns 1) are ok
     // this is set for a second pass, after filling parameters with defaults
     bool bit, bits[NCHANNELS];
@@ -867,4 +867,4 @@ int ConfigurationFileParser::init_PixieNetFippiConfig_from_file(const char *cons
     }
     
     return 0;
-}//init_PixieNetFippiConfig_from_file(...)
+}//init_FippiConfiguration_from_file(...)
