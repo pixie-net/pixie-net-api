@@ -1,12 +1,12 @@
-/// @file ParseConfigurationFiles.cpp
+/// @file ConfigurationFileParser.cpp
 /// @brief
 /// @author S. V. Paulauskas
 /// @date February 22, 2020
 #include <iostream>
 
-#include "ParseConfigurationFiles.hpp"
+#include "ConfigurationFileParser.hpp"
 
-PixieNetFippiConfig ParseConfigurationFiles::parse_config(const char *settings) {
+PixieNetFippiConfig ConfigurationFileParser::parse_config(const char *settings) {
     PixieNetFippiConfig fippiconfig;
     
     // Do not allow any missing entries in defaults.ini.

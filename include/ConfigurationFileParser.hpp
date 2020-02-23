@@ -3,12 +3,12 @@
 /// @author S. V. Paulauskas
 /// @date February 22, 2020
 
-#ifndef PIXIE_NET_PARSECONFIGURATIONFILES_HPP
-#define PIXIE_NET_PARSECONFIGURATIONFILES_HPP
+#ifndef PIXIE_NET_CONFIGURATIONFILEPARSER_HPP
+#define PIXIE_NET_CONFIGURATIONFILEPARSER_HPP
 
 #include "PixieNetConfig.hpp"
 
-class ParseConfigurationFiles {
+class ConfigurationFileParser {
 public:
     ///Parses the provided configuration file for parameters.
     ///@return The configuration parsed out of the file
@@ -16,4 +16,4 @@ public:
 };
 
 
-#endif //PIXIE_NET_PARSECONFIGURATIONFILES_HPP
+#endif //PIXIE_NET_CONFIGURATIONFILEPARSER_HPP

@@ -1,5 +1,5 @@
 set(API_SOURCE_LIST
-        ParseConfigurationFiles.cpp
+        ConfigurationFileParser.cpp
         PixieNetConfig.cpp
         PixieNetCommon.cpp
         ProgramFippi.cpp
