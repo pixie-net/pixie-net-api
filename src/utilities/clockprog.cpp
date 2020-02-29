@@ -32,23 +32,12 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <math.h>
-#include <time.h>
-#include <signal.h>
-#include <assert.h>
-#include <errno.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+
 #include <sys/mman.h>
 #include <sys/file.h>
-
-// gcc -Wall clockprog.c PixieNetCommon.o -o clockprog
-
+#include <unistd.h>
 
 #include "PixieNetDefs.hpp"
 #include "PixieNetCommon.hpp"

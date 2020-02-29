@@ -40,7 +40,6 @@
 #include <ctime>
 #include <cstring>
 
-#include <fcntl.h>
 #include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/stat.h>

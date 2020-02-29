@@ -32,33 +32,26 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <time.h>
+#include <iostream>
+
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
+
 #include <signal.h>
-#include <errno.h>
 #include <string.h>
-#include <inttypes.h>
 #include <sys/mman.h>
 #include <sys/file.h>
-#include <math.h>
-#include <stdint.h>
+#include <unistd.h>
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
-
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
 #include <boost/atomic.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lockfree/queue.hpp>
 #include <boost/program_options.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/thread.hpp>
 
 #ifdef USE_KAFKA
 
@@ -69,9 +62,9 @@
 
 #include "ConfigurationFileParser.hpp"
 #include "PixieNetDefs.hpp"
-#include "UserspaceIo.hpp"
 #include "PixieNetCommon.hpp"
 #include "ProgramFippi.hpp"
+#include "UserspaceIo.hpp"
 
 using namespace std;
 

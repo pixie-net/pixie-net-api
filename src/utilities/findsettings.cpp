@@ -32,12 +32,12 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <cstdio>
-#include <unistd.h>
-#include <cstdlib>
-#include <fcntl.h>
-#include <sys/mman.h>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include "PixieNetDefs.hpp"
 #include "PixieNetCommon.hpp"

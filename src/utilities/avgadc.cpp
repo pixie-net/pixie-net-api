@@ -37,7 +37,6 @@
 #include <cmath>
 #include <cstdio>
 
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
