@@ -32,8 +32,6 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#define __STDC_FORMAT_MACROS
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -63,13 +61,17 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #ifdef USE_KAFKA
+
 #include "cppkafka/producer.h"
 #include "cppkafka/configuration.h"
+
 #endif
 
+#include "ConfigurationFileParser.hpp"
 #include "PixieNetDefs.hpp"
 #include "PixieNetConfig.hpp"
 #include "PixieNetCommon.hpp"
+#include "ProgramFippi.hpp"
 
 using namespace std;
 
@@ -257,18 +259,18 @@ int PixieNetHit_write_402(FILE *instrm, const PixieNetHit402 *const hit);
 unsigned int collect_PixieNet_lm_data400(volatile unsigned int *mapped,
                                          PixieNetHit402 hits[NCHANNELS],
                                          PixieNetRunningStats *runstats,
-                                         const PixieNetFippiConfig *fippiconfig);
+                                         const FippiConfiguration *fippiconfig);
 
 /** reads the data from FPGA and puts into "hits" record, special for RUN_TYPE 0x402 */
 unsigned int collect_PixieNet_lm_data402(volatile unsigned int *mapped,
                                          PixieNetHit402 hits[NCHANNELS],
                                          PixieNetRunningStats *runstats,
-                                         const PixieNetFippiConfig *fippiconfig);
+                                         const FippiConfiguration *fippiconfig);
 
 /** Returns a zero or positive value on success */
 int init_configurations(int argc, char **argv,
                         RunOptions &options,
-                        PixieNetFippiConfig &fippiconfig);
+                        FippiConfiguration &fippiconfig);
 
 
 /* ********************************************************************************
@@ -280,7 +282,6 @@ int init_configurations(int argc, char **argv,
 
 
 int main(int argc, char **argv) {
-    
     int TL;
     unsigned int BLbad[NCHANNELS];
     unsigned int BLcut[NCHANNELS], BLavg[NCHANNELS];
@@ -298,19 +299,11 @@ int main(int argc, char **argv) {
     // --------------------------------------------------------
     // ------ Start setting up the PIXIE-NET  -------
     // --------------------------------------------------------
-    
-    const string settings_file = "settings.ini";
-    RunOptions options;
-    PixieNetFippiConfig fippiconfig;
-    
-    if (init_configurations(argc, argv, options, fippiconfig) < 0) {
-        return EXIT_FAILURE;
-    }
-    
-    cout << "Succeded in parsing config/settings files" << endl;
-    
-    
     // *************** PS/PL IO initialization *********************
+    FippiConfiguration fippiconfig;
+    RunOptions options;
+    init_configurations(argc, argv, options, fippiconfig);
+    
     // open the device for PD register I/O
     const int device_fd_PL = open("/dev/uio0", O_RDWR);
     if (device_fd_PL < 0) {
@@ -463,7 +456,6 @@ int main(int argc, char **argv) {
         }
         
     }//if( saving LM data header )
-    
     
     const boost::posix_time::ptime starttime = boost::posix_time::second_clock::local_time();
     //cout << "Start time: " << starttime << endl;
@@ -903,12 +895,12 @@ void histogram_lm_data(uint32_t histogram[NCHANNELS + 1][MAX_MCA_BINS],
     cppkafka::MessageBuilder builder("pixie-net");
     builder.partition(0);
     cppkafka::Configuration config = {
-        {"metadata.broker.list", "192.168.1.25:9092"}
+            {"metadata.broker.list", "192.168.1.25:9092"}
     };
     cppkafka::Producer producer(config);
     string payload;
-    for(int i = 0; i < MAX_MCA_BINS-1; i++)
-      payload += std::to_string(histogram[0][i]) + ",";
+    for (int i = 0; i < MAX_MCA_BINS - 1; i++)
+        payload += std::to_string(histogram[0][i]) + ",";
     cout << "MCA IS : " << payload << endl;
     producer.produce(builder.payload(payload));
     producer.flush();
@@ -924,7 +916,7 @@ void histogram_lm_data(uint32_t histogram[NCHANNELS + 1][MAX_MCA_BINS],
 
 int init_configurations(int argc, char **argv,
                         RunOptions &options,
-                        PixieNetFippiConfig &fippiconfig) {
+                        FippiConfiguration &fippiconfig) {
     
     string settingsfile;
     
@@ -966,20 +958,9 @@ int init_configurations(int argc, char **argv,
         return -1;
     }//if( cl_vm.count("help") )
     
-    const char *defaults_file = "defaults.ini";
-    int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0,
-                                                  &fippiconfig);   // first load defaults, do not allow missing parameters
-    if (rval != 0) {
-        cerr << "Failed to parse FPGA settings from default file" << endl;
-        return -2;
-    }
-    if (init_PixieNetFippiConfig_from_file(settingsfile.c_str(), 1,
-                                           &fippiconfig))     // second override with user settings, do allow missing
-    {
-        cerr << "Failed to parse FPGA settings from " << settingsfile << endl;
-        return -2;
-    }
     
+    fippiconfig = ConfigurationFileParser().parse_config(settingsfile.c_str());
+    ProgramFippi().program_fippi(fippiconfig);
     
     return 0;
 }//init_configurations
@@ -1009,7 +990,7 @@ void init_PixieNetRunningStats(PixieNetRunningStats *stats) {
 unsigned int collect_PixieNet_lm_data400(volatile unsigned int *mapped,
                                          PixieNetHit402 hits[NCHANNELS],
                                          PixieNetRunningStats *stats,
-                                         const PixieNetFippiConfig *fippiconfig) {
+                                         const FippiConfiguration *fippiconfig) {
     stats->numchecks += 1;
     
     unsigned int eventcount = 0;
@@ -1209,7 +1190,7 @@ unsigned int collect_PixieNet_lm_data400(volatile unsigned int *mapped,
 unsigned int collect_PixieNet_lm_data402(volatile unsigned int *mapped,
                                          PixieNetHit402 hits[NCHANNELS],
                                          PixieNetRunningStats *stats,
-                                         const PixieNetFippiConfig *fippiconfig) {
+                                         const FippiConfiguration *fippiconfig) {
     stats->numchecks += 1;
     
     unsigned int eventcount = 0;
@@ -1422,18 +1403,18 @@ int PixieNetHit_write_400(FILE *outstrm, const PixieNetHit402 *const hit) {
 #if(PixieNetHit_HAS_WAVEFORM)
     fwrite(hit->waveform0, hit->num_waveform0, sizeof(hit->waveform0[0]), outstrm);
     ///SVP says, "Stuff the waveform into the buffer if it exists!"
-    memcpy(buffer + sizeof(hit->waveform0[0]), &(hit->waveform0), sizeof(hit->waveform0[0]));
+        memcpy(buffer + sizeof(hit->waveform0[0]), &(hit->waveform0), sizeof(hit->waveform0[0]));
 #endif
 
 #ifdef USE_KAFKA
     // SVP says, "Let's write this to Kafka instead of to disk!
     static cppkafka::MessageBuilder builder("pixie-net");
     static cppkafka::Configuration config = {
-      {"metadata.broker.list", "192.168.1.25:9092"}
+            {"metadata.broker.list", "192.168.1.25:9092"}
     };
     static cppkafka::Producer producer(config);
     builder.partition(1); //Use partition 1 since partition 0 is for MCA
-    std::string payload(reinterpret_cast<char*>(buffer), sizeof(buffer));
+    std::string payload(reinterpret_cast<char *>(buffer), sizeof(buffer));
     cout << "PixieNetHit_write_400 - getting ready to deliver the payload." << endl;
     producer.produce(builder.payload("HELLO FROM INSIDE PixieNetHit_write_400"));
     //producer.produce(builder.payload(payload));

@@ -35,8 +35,8 @@ endif (CMAKE_BUILD_TYPE MATCHES "Debug")
 
 include(CMakeDependentOption)
 option(BUILD_TESTS "Builds programs designed to test the package. Including UnitTest++ test." OFF)
-option(USE_KAFKA "Builds acquire with Kafka support" ON)
-option(USE_NETDAQ "Builds network connected DAQ" ON)
+option(USE_KAFKA "Builds acquire with Kafka support" OFF)
+option(USE_NETDAQ "Builds network connected DAQ" OFF)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 find_package(Threads REQUIRED)

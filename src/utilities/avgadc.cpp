@@ -32,18 +32,29 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
+#include <iostream>
+
+#include <cmath>
+#include <cstdio>
+
 #include <fcntl.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "ConfigurationFileParser.hpp"
 #include "PixieNetDefs.hpp"
 #include "PixieNetCommon.hpp"
-#include "PixieNetConfig.hpp"
+#include "ProgramFippi.hpp"
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        std::cout << "You must provide a configuration file for programming the FPGA!"
+                  << std::endl << "USAGE: avgadc /path/to/ini/config/file";
+        return 1;
+    }
+    FippiConfiguration fippiconfig = ConfigurationFileParser().parse_config(argv[1]);
+    ProgramFippi().program_fippi(fippiconfig);
+    
     int fd;
     void *map_addr;
     int size = 4096;
@@ -54,22 +65,6 @@ int main(void) {
     unsigned int mval;
     unsigned int maxwait;
     double scale[NCHANNELS];
-    
-    PixieNetFippiConfig fippiconfig;        // struct holding the input parameters
-    const char *defaults_file = "defaults.ini";
-    int rval = init_PixieNetFippiConfig_from_file(defaults_file, 0,
-                                                  &fippiconfig);   // first load defaults, do not allow missing parameters
-    if (rval != 0) {
-        printf("Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval);
-        return rval;
-    }
-    const char *settings_file = "settings.ini";
-    rval = init_PixieNetFippiConfig_from_file(settings_file, 1,
-                                              &fippiconfig);   // second override with user settings, do allow missing
-    if (rval != 0) {
-        printf("Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval);
-        return rval;
-    }
     
     // compute max. wait time  and scaling factor
     maxwait = 0;
