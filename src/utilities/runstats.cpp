@@ -32,16 +32,12 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "PixieNetDefs.h"
-#include "PixieNetCommon.h"
+#include "PixieNetCommon.hpp"
+#include "PixieNetDefs.hpp"
+#include "UserspaceIo.hpp"
 
 int main(void) {
     int size = 4096;
