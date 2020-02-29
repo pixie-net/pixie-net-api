@@ -32,16 +32,12 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <iostream>
-
 #include "ConfigurationFileParser.hpp"
 #include "ProgramFippi.hpp"
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        std::cout << "You must provide a configuration file for programming the FPGA!"
-                  << std::endl << "USAGE: progfippi /path/to/ini/config/file";
-        return 1;
-    }
-    ProgramFippi().program_fippi(ConfigurationFileParser().parse_config(argv[1]));
+    FippiConfiguration config;
+    if (argc == 2)
+        config = ConfigurationFileParser().parse_config(argv[1]);
+    ProgramFippi().program_fippi(config);
 }

@@ -47,13 +47,10 @@
 #include "UserspaceIo.hpp"
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        std::cout << "You must provide a configuration file for programming the FPGA!"
-                  << std::endl << "USAGE: avgadc /path/to/ini/config/file";
-        return 1;
-    }
-    FippiConfiguration fippiconfig = ConfigurationFileParser().parse_config(argv[1]);
-    ProgramFippi().program_fippi(fippiconfig);
+    FippiConfiguration fippiConfiguration;
+    if (argc == 2)
+        fippiConfiguration = ConfigurationFileParser().parse_config(argv[1]);
+    ProgramFippi().program_fippi(fippiConfiguration);
     
     int size = 4096;
     int k;
@@ -67,13 +64,13 @@ int main(int argc, char *argv[]) {
     maxwait = 0;
     for (k = 0; k < NCHANNELS; k++)          // get maximum sampling interval
     {
-        if (maxwait < fippiconfig.ADC_AVG[k])
-            maxwait = fippiconfig.ADC_AVG[k];
+        if (maxwait < fippiConfiguration.ADC_AVG[k])
+            maxwait = fippiConfiguration.ADC_AVG[k];
         
-        scale[k] = (double) fippiconfig.ADC_AVG[k];
-        if (fippiconfig.ADC_AVG[k] > 2048)
+        scale[k] = (double) fippiConfiguration.ADC_AVG[k];
+        if (fippiConfiguration.ADC_AVG[k] > 2048)
             scale[k] = scale[k] / 16384.0;
-        else if (fippiconfig.ADC_AVG[k] > 64)
+        else if (fippiConfiguration.ADC_AVG[k] > 64)
             scale[k] = scale[k] / 128.0;
         // scale[k] =1; // debug
         

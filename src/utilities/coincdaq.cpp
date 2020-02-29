@@ -51,13 +51,10 @@
 #include "UserspaceIo.hpp"
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        std::cout << "You must provide a configuration file for programming the FPGA!"
-                  << std::endl << "USAGE: coincdaq /path/to/ini/config/file";
-        return 1;
-    }
-    FippiConfiguration fippiconfig = ConfigurationFileParser().parse_config(argv[1]);
-    ProgramFippi().program_fippi(fippiconfig);
+    FippiConfiguration fippiConfiguration;
+    if (argc == 2)
+        fippiConfiguration = ConfigurationFileParser().parse_config(argv[1]);
+    ProgramFippi().program_fippi(fippiConfiguration);
     
     int size = 4096;
     int k, ch;
@@ -98,32 +95,32 @@ int main(int argc, char *argv[]) {
     onlinebin = MAX_MCA_BINS / WEB_MCA_BINS;
     
     // assign to local variables, including any rounding/discretization
-    Accept = fippiconfig.ACCEPT_PATTERN;
-    RunType = fippiconfig.RUN_TYPE;
-    SyncT = fippiconfig.SYNC_AT_START;
-    ReqRunTime = fippiconfig.REQ_RUNTIME;
-    PollTime = fippiconfig.POLL_TIME;
+    Accept = fippiConfiguration.ACCEPT_PATTERN;
+    RunType = fippiConfiguration.RUN_TYPE;
+    SyncT = fippiConfiguration.SYNC_AT_START;
+    ReqRunTime = fippiConfiguration.REQ_RUNTIME;
+    PollTime = fippiConfiguration.POLL_TIME;
 //
-    if ((fippiconfig.RUN_TYPE == 0x400) ||
-        (fippiconfig.RUN_TYPE == 0x402) ||
-        (fippiconfig.RUN_TYPE == 0x500) ||
-        (fippiconfig.RUN_TYPE == 0x501) ||
-        (fippiconfig.RUN_TYPE == 0x502)) {
+    if ((fippiConfiguration.RUN_TYPE == 0x400) ||
+        (fippiConfiguration.RUN_TYPE == 0x402) ||
+        (fippiConfiguration.RUN_TYPE == 0x500) ||
+        (fippiConfiguration.RUN_TYPE == 0x501) ||
+        (fippiConfiguration.RUN_TYPE == 0x502)) {
         printf("This funtion only supports runtype 0x503. (Use acquire for 0x402)\n"); // and 0x402\n");
         return -1;
     }
     
     
     for (k = 0; k < NCHANNELS; k++) {
-        SL[k] = (int) floor(fippiconfig.ENERGY_RISETIME[k] *
+        SL[k] = (int) floor(fippiConfiguration.ENERGY_RISETIME[k] *
                             FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-//    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-        Dgain[k] = fippiconfig.DIG_GAIN[k];
-//    TL[k]          = BLOCKSIZE_400*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_400);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
-        Binfactor[k] = fippiconfig.BINFACTOR[k];
-        Tau[k] = fippiconfig.TAU[k];
-        BLcut[k] = fippiconfig.BLCUT[k];
-        BLavg[k] = fippiconfig.BLAVG[k];
+//    SG[k]          = (int)floor(fippiConfiguration.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+        Dgain[k] = fippiConfiguration.DIG_GAIN[k];
+//    TL[k]          = BLOCKSIZE_400*(int)floor(fippiConfiguration.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_400);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
+        Binfactor[k] = fippiConfiguration.BINFACTOR[k];
+        Tau[k] = fippiConfiguration.TAU[k];
+        BLcut[k] = fippiConfiguration.BLCUT[k];
+        BLavg[k] = fippiConfiguration.BLAVG[k];
         if (BLavg[k] < 0) BLavg[k] = 0;
         if (BLavg[k] == 65536) BLavg[k] = 0;
         if (BLavg[k] > MAX_BLAVG) BLavg[k] = MAX_BLAVG;

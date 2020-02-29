@@ -52,13 +52,10 @@
 #include "UserspaceIo.hpp"
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        std::cout << "You must provide a configuration file for programming the FPGA!"
-                  << std::endl << "USAGE: startdaq /path/to/ini/config/file";
-        return 1;
-    }
-    FippiConfiguration fippiconfig = ConfigurationFileParser().parse_config(argv[1]);
-    ProgramFippi().program_fippi(fippiconfig);
+    FippiConfiguration fippiConfiguration;
+    if (argc == 2)
+        fippiConfiguration = ConfigurationFileParser().parse_config(argv[1]);
+    ProgramFippi().program_fippi(fippiConfiguration);
     
     int size = 4096;
     int k, ch, tmpS;
@@ -99,12 +96,12 @@ int main(int argc, char *argv[]) {
     onlinebin = MAX_MCA_BINS / WEB_MCA_BINS;
     
     // assign to local variables, including any rounding/discretization
-    Accept = fippiconfig.ACCEPT_PATTERN;
-    RunType = fippiconfig.RUN_TYPE;
-    SyncT = fippiconfig.SYNC_AT_START;
-    ReqRunTime = fippiconfig.REQ_RUNTIME;
-    PollTime = fippiconfig.POLL_TIME;
-    CW = (int) floor(fippiconfig.COINCIDENCE_WINDOW *
+    Accept = fippiConfiguration.ACCEPT_PATTERN;
+    RunType = fippiConfiguration.RUN_TYPE;
+    SyncT = fippiConfiguration.SYNC_AT_START;
+    ReqRunTime = fippiConfiguration.REQ_RUNTIME;
+    PollTime = fippiConfiguration.POLL_TIME;
+    CW = (int) floor(fippiConfiguration.COINCIDENCE_WINDOW *
                      FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
     
     if ((RunType == 0x503) || (RunType == 0x402)) {      // grouped list mode run (equiv 0x402)
@@ -113,16 +110,16 @@ int main(int argc, char *argv[]) {
     }
     
     for (k = 0; k < NCHANNELS; k++) {
-        SL[k] = (int) floor(fippiconfig.ENERGY_RISETIME[k] *
+        SL[k] = (int) floor(fippiConfiguration.ENERGY_RISETIME[k] *
                             FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-//    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-        Dgain[k] = fippiconfig.DIG_GAIN[k];
-        TL[k] = BLOCKSIZE_400 * (int) floor(fippiconfig.TRACE_LENGTH[k] * ADC_CLK_MHZ /
+//    SG[k]          = (int)floor(fippiConfiguration.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+        Dgain[k] = fippiConfiguration.DIG_GAIN[k];
+        TL[k] = BLOCKSIZE_400 * (int) floor(fippiConfiguration.TRACE_LENGTH[k] * ADC_CLK_MHZ /
                                             BLOCKSIZE_400);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
-        Binfactor[k] = fippiconfig.BINFACTOR[k];
-        Tau[k] = fippiconfig.TAU[k];
-        BLcut[k] = fippiconfig.BLCUT[k];
-        BLavg[k] = 65536 - fippiconfig.BLAVG[k];
+        Binfactor[k] = fippiConfiguration.BINFACTOR[k];
+        Tau[k] = fippiConfiguration.TAU[k];
+        BLcut[k] = fippiConfiguration.BLCUT[k];
+        BLavg[k] = 65536 - fippiConfiguration.BLAVG[k];
         if (BLavg[k] < 0) BLavg[k] = 0;
         if (BLavg[k] == 65536) BLavg[k] = 0;
         if (BLavg[k] > MAX_BLAVG) BLavg[k] = MAX_BLAVG;
@@ -189,8 +186,8 @@ int main(int argc, char *argv[]) {
             buffer1[1] = 0;                                       // module number (get from settings file?)
             buffer1[2] = RunType;
             buffer1[3] = CHAN_HEAD_LENGTH_400;
-            buffer1[4] = fippiconfig.COINCIDENCE_PATTERN;
-            buffer1[5] = fippiconfig.COINCIDENCE_WINDOW;
+            buffer1[4] = fippiConfiguration.COINCIDENCE_PATTERN;
+            buffer1[5] = fippiConfiguration.COINCIDENCE_WINDOW;
             buffer1[7] = revsn >> 16;               // HW revision from EEPROM
             buffer1[12] = revsn & 0xFFFF;         // serial number from EEPROM
             for (ch = 0; ch < NCHANNELS; ch++) {
@@ -298,7 +295,7 @@ int main(int argc, char *argv[]) {
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
                         psa_base = psa0 &
                                    0xFFFF;                                   // base only, in same scale as ADC samples
-                        if (fippiconfig.QDC_DIV8[ch])
+                        if (fippiConfiguration.QDC_DIV8[ch])
                             bscale = 32.0;
                         else
                             bscale = 4.0;
@@ -306,7 +303,7 @@ int main(int argc, char *argv[]) {
                         tmpI = (psa0 & 0xFFFF0000)
                                 >> 16;                           // raw Q0, scaled by 1/4, not BL corrected
                         tmpD = (double) tmpI - (double) psa_base / bscale *
-                                               fippiconfig.QDC0_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
+                                               fippiConfiguration.QDC0_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
                         if ((tmpD > 0) && (tmpD < 65535))
                             psa_Q0 = (int) floor(tmpD);
                         else
@@ -315,7 +312,7 @@ int main(int argc, char *argv[]) {
                         tmpI = (psa1 &
                                 0xFFFF);                                     // raw Q1, scaled by 1/4, not BL corrected
                         tmpD = (double) tmpI - (double) psa_base / bscale *
-                                               fippiconfig.QDC1_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
+                                               fippiConfiguration.QDC1_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
                         if ((tmpD > 0) && (tmpD < 65535))
                             psa_Q1 = (int) floor(tmpD);
                         else
@@ -371,8 +368,8 @@ int main(int argc, char *argv[]) {
                         
                         if (RunType == 0x502) {
                             // 2D spectrum R vs E
-                            binx = (int) floor(ph / fippiconfig.MCA2D_SCALEX[ch]);
-                            biny = (int) floor((double) psa_R / fippiconfig.MCA2D_SCALEY[ch]);
+                            binx = (int) floor(ph / fippiConfiguration.MCA2D_SCALEX[ch]);
+                            biny = (int) floor((double) psa_R / fippiConfiguration.MCA2D_SCALEY[ch]);
                             if ((binx < MCA2D_BINS) && (biny < MCA2D_BINS) && (binx > 0) && (biny > 0)) {
                                 mca2D[ch][binx + MCA2D_BINS * biny] =
                                         mca2D[ch][binx + MCA2D_BINS * biny] + 1; // increment 2D MCA
