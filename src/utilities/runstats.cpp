@@ -48,20 +48,10 @@ int main(void) {
     int size = 4096;
     
     // *************** PS/PL IO initialization *********************
-    // open the device for PD register I/O
-    int fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
-        return 1;
-    }
-    
-    void *map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return 1;
-    }
-    volatile unsigned int *mapped = (unsigned int *) map_addr;
+    UserspaceIo uio;
+    int fd = uio.OpenPdFileDescription();
+    unsigned int *map_addr = uio.MapMemoryAddress(fd, 4096);
+    volatile unsigned int *mapped = map_addr;
     
     // ************** XIA code begins **************************
     mapped[AOUTBLOCK] = OB_RSREG;

@@ -45,6 +45,7 @@
 #include "PixieNetDefs.hpp"
 #include "PixieNetCommon.hpp"
 #include "ProgramFippi.hpp"
+#include "UserspaceIo.hpp"
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -55,10 +56,7 @@ int main(int argc, char *argv[]) {
     FippiConfiguration fippiconfig = ConfigurationFileParser().parse_config(argv[1]);
     ProgramFippi().program_fippi(fippiconfig);
     
-    int fd;
-    void *map_addr;
     int size = 4096;
-    volatile unsigned int *mapped;
     int k;
     FILE *fil;
     unsigned int adc0[NAVG_TRACE_SAMPLES], adc1[NAVG_TRACE_SAMPLES], adc2[NAVG_TRACE_SAMPLES], adc3[NAVG_TRACE_SAMPLES];
@@ -87,21 +85,10 @@ int main(int argc, char *argv[]) {
     printf("scale factors %f %f %f %f \n", scale[0], scale[1], scale[2], scale[3]);
     
     // *************** PS/PL IO initialization *********************
-    // open the device for PD register I/O
-    fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
-        return 1;
-    }
-    
-    map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return 1;
-    }
-    
-    mapped = (unsigned int *) map_addr;
+    UserspaceIo uio;
+    int fd = uio.OpenPdFileDescription();
+    unsigned int *map_addr = uio.MapMemoryAddress(fd, size);
+    volatile unsigned int *mapped = map_addr;
     
     // **************** XIA code begins **********************
     // 1. arm trigger

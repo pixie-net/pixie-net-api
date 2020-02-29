@@ -1,4 +1,5 @@
 add_executable(pollcsr pollcsr.cpp)
+target_link_libraries(pollcsr PixieNetApi_STATIC m)
 install(TARGETS pollcsr DESTINATION bin)
 
 FOREACH (prog findsettings clockprog)

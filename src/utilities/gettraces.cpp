@@ -44,28 +44,15 @@
 #include "PixieNetCommon.h"
 
 int main(void) {
-    int fd;
-    void *map_addr;
     int size = 4096;
     int k;
     unsigned int adc0[NTRACE_SAMPLES], adc1[NTRACE_SAMPLES], adc2[NTRACE_SAMPLES], adc3[NTRACE_SAMPLES];
     
     // *************** PS/PL IO initialization *********************
-    // open the device for PD register I/O
-    fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
-        return 1;
-    }
-    
-    map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return 1;
-    }
-    
-    volatile int *mapped = (int *) map_addr;
+    UserspaceIo uio;
+    int fd = uio.OpenPdFileDescription();
+    unsigned int *map_addr = uio.MapMemoryAddress(fd, 4096);
+    volatile unsigned int *mapped = map_addr;
     
     // **************** XIA code begins **********************
     // read 8K samples from ADC register

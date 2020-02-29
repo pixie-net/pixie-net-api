@@ -52,6 +52,7 @@
 #include "PixieNetDefs.hpp"
 #include "PixieNetCommon.hpp"
 #include "ProgramFippi.hpp"
+#include "UserspaceIo.hpp"
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -62,13 +63,17 @@ int main(int argc, char *argv[]) {
     FippiConfiguration fippiconfig = ConfigurationFileParser().parse_config(argv[1]);
     ProgramFippi().program_fippi(fippiconfig);
     
-    int fd;
-    void *map_addr;
     int size = 4096;
-    volatile unsigned int *mapped;
     int k, ch;
     FILE *filmca;
     FILE *fil;
+    
+    // *************** PS/PL IO initialization *********************
+    UserspaceIo uio;
+    int fd = uio.OpenPdFileDescription();
+    unsigned int *map_addr = uio.MapMemoryAddress(fd, size);
+    volatile unsigned int *mapped = map_addr;
+    
     
     unsigned int Accept, RunType, SyncT, ReqRunTime, PollTime;
     unsigned int SL[NCHANNELS];
@@ -128,31 +133,6 @@ int main(int argc, char *argv[]) {
         if (BLavg[k] > MAX_BLAVG) BLavg[k] = MAX_BLAVG;
         BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
     }
-    
-    
-    
-    // *************** PS/PL IO initialization *********************
-    // open the device for PD register I/O
-    fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
-        return -2;
-    }
-    
-    //Lock the PL address space so multiple programs cant step on eachother.
-    if (flock(fd, LOCK_EX | LOCK_NB)) {
-        printf("Failed to get file lock on /dev/uio0\n");
-        return -3;
-    }
-    
-    map_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return -4;
-    }
-    
-    mapped = (unsigned int *) map_addr;
     
     // --------------------------------------------------------
     // ------------------- Main code begins --------------------

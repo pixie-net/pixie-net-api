@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #include "PixieNetCommon.hpp"
-#include "PixieNetConfig.hpp"
+#include "UserspaceIo.hpp"
 
 int ProgramFippi::program_fippi(const FippiConfiguration &fippiconfig) {
     int size = 4096;
@@ -27,8 +27,9 @@ int ProgramFippi::program_fippi(const FippiConfiguration &fippiconfig) {
     
     // *************** PS/PL IO initialization *********************
     // open the device for PD register I/O
-    int fd = OpenPdFileDescription();
-    unsigned int *map_addr = MapMemoryAddress(fd, size);
+    UserspaceIo uio;
+    int fd = uio.OpenPdFileDescription();
+    unsigned int *map_addr = uio.MapMemoryAddress(fd, size);
     volatile unsigned int *mapped = map_addr;
     
     // ******************* XIA code begins ********************

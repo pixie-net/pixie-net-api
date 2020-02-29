@@ -32,38 +32,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <cstdio>
+#ifndef USERSPACEIO_h
+#define USERSPACEIO_h
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/file.h>
-
-#include "PixieNetDefs.hpp"
-
-using namespace std;
-
-int OpenPdFileDescription() {
-    // open the device for PD register I/O
-    int fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
-        return 1;
-    }
+class UserspaceIo {
+public:
+    int OpenPdFileDescription();
     
-    //Lock the PL address space so multiple programs cant step on each other.
-    if (flock(fd, LOCK_EX | LOCK_NB)) {
-        printf("Failed to get file lock on /dev/uio0\n");
-        return 1;
-    }
-    return fd;
-}
+    unsigned int *MapMemoryAddress(int fd, int size);
+};
 
-unsigned int *MapMemoryAddress(int fd, int size) {
-    void *map_addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return nullptr;
-    }
-    return (unsigned int *) map_addr;
-}
+#endif

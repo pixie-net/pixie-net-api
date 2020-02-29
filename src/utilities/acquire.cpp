@@ -69,7 +69,7 @@
 
 #include "ConfigurationFileParser.hpp"
 #include "PixieNetDefs.hpp"
-#include "PixieNetConfig.hpp"
+#include "UserspaceIo.hpp"
 #include "PixieNetCommon.hpp"
 #include "ProgramFippi.hpp"
 
@@ -304,34 +304,15 @@ int main(int argc, char **argv) {
     RunOptions options;
     init_configurations(argc, argv, options, fippiconfig);
     
-    // open the device for PD register I/O
-    const int device_fd_PL = open("/dev/uio0", O_RDWR);
-    if (device_fd_PL < 0) {
-        perror("Failed to open PL devfile");
-        return -1;
-    }
-    
-    void *map_addr = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, device_fd_PL, 0);
-    
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return -2;
-    }
-    
-    //Lock the fipi device so multiple programs cant step on eachother.
-    if (flock(device_fd_PL, LOCK_EX | LOCK_NB)) {
-        cerr << "Failed to get file lock on /dev/uio0" << endl;
-        munmap(map_addr, 4096);
-        close(device_fd_PL);
-        return -3;
-    }
-    
-    volatile unsigned int *mapped = (unsigned int *) map_addr;
+    UserspaceIo uio;
+    int fd = uio.OpenPdFileDescription();
+    unsigned int *map_addr = uio.MapMemoryAddress(fd, 4096);
+    volatile unsigned int *mapped = map_addr;
     
     // **********  Compute Coefficients for E Computation and other initialization ************
     PixieNetRunningStats runstats;
     init_PixieNetRunningStats(&runstats);
-    
+
     
     for (int k = 0; k < NCHANNELS; k++) {
         const double dt = 1.0 / FILTER_CLOCK_MHZ;
@@ -364,9 +345,9 @@ int main(int argc, char **argv) {
         if ((fippiconfig.RUN_TYPE != 0x301) && (TL > MAX_ACQ_TL)) {
             cerr << "Compile option limits TRACE_LENGTH to " << MAX_ACQ_TL << " samples, exiting." << endl;
             cerr << "(Shorten TRACE_LENGTHs or modify #defines in acquire.cpp and recompile.)" << endl;
-            flock(device_fd_PL, LOCK_UN);
+            flock(fd, LOCK_UN);
             munmap(map_addr, 4096);
-            close(device_fd_PL);
+            close(fd);
             return -6;
         }
     }
@@ -387,9 +368,9 @@ int main(int argc, char **argv) {
         //ok, do nothing
     } else {
         cerr << "This function only supports runtypes 0x301, 0x400, 0x402 for now, exiting" << endl;
-        flock(device_fd_PL, LOCK_UN);
+        flock(fd, LOCK_UN);
         munmap(map_addr, 4096);
-        close(device_fd_PL);
+        close(fd);
         return -5;
     }
     
@@ -414,9 +395,9 @@ int main(int argc, char **argv) {
         lmout = fopen(listmodeoutname.c_str(), "wb");
         if (lmout == NULL) {
             cerr << "Failed to open '" << listmodeoutname << "', exiting" << endl;
-            flock(device_fd_PL, LOCK_UN);
+            flock(fd, LOCK_UN);
             munmap(map_addr, 4096);
-            close(device_fd_PL);
+            close(fd);
             return -4;
         }
         
@@ -448,9 +429,9 @@ int main(int argc, char **argv) {
         } else {
             cerr << "This function only supports runtypes 0x301, 0x400, 0x402 for now, exiting"
                  << endl;   // MCA run 0x301 also ok
-            flock(device_fd_PL, LOCK_UN);
+            flock(fd, LOCK_UN);
             munmap(map_addr, 4096);
-            close(device_fd_PL);
+            close(fd);
             fclose(lmout);
             return -5;
         }
@@ -742,9 +723,9 @@ int main(int argc, char **argv) {
     cout << "Done writing MCA and run statistics." << endl;
     
     // clean up
-    flock(device_fd_PL, LOCK_UN);
+    flock(fd, LOCK_UN);
     munmap(map_addr, 4096);
-    close(device_fd_PL);
+    close(fd);
     return 0;
 }
 

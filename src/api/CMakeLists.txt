@@ -1,7 +1,7 @@
 set(API_SOURCE_LIST
         ConfigurationFileParser.cpp
         FippiConfiguration.cpp
-        PixieNetConfig.cpp
+        UserspaceIo.cpp
         PixieNetCommon.cpp
         ProgramFippi.cpp
         )

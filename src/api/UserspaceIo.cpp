@@ -1,3 +1,8 @@
+/// @file UserspaceIo.cpp
+/// @brief Setups and configures the UIO (https://www.kernel.org/doc/html/v4.12/driver-api/uio-howto.html)
+/// @author S. V. Paulauskas
+/// @date February 29, 2020
+
 /*----------------------------------------------------------------------
  * Copyright (c) 2017 XIA LLC
  * All rights reserved.
@@ -32,27 +37,38 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#ifndef PixieNetConfig_h
-#define PixieNetConfig_h
+#include "UserspaceIo.hpp"
 
-#include <stdint.h>
+#include <cstdio>
 
-/*  Functions and structs in this header are mainly concerned with configuring 
-    the FPGA, data runs, and eventually reading other information out from the
-    MCA.
- 
-    Note the functions in this header are implemented in c++, but can still be
-    called from C programs.
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/file.h>
 
-    To add new parameters, its name has to be typed 5 times
-    1) add line in ini files (2x)
-    2) add element to struct in PixieNetConfig.h
-    3) add parse/read line in PixieNetConfig.cpp
-    4) use in progfippi or equivalent
- */
+#include "PixieNetDefs.hpp"
 
-int OpenPdFileDescription();
+int UserspaceIo::OpenPdFileDescription() {
+    // open the device for PD register I/O
+    int fd = open("/dev/uio0", O_RDWR);
+    if (fd < 0) {
+        perror("Failed to open devfile");
+        return 1;
+    }
+    
+    //Lock the PL address space so multiple programs cant step on each other.
+    if (flock(fd, LOCK_EX | LOCK_NB)) {
+        printf("Failed to get file lock on /dev/uio0\n");
+        return 1;
+    }
+    return fd;
+}
 
-unsigned int *MapMemoryAddress(int fd, int size);
-
-#endif
+unsigned int *UserspaceIo::MapMemoryAddress(int fd, int size) {
+    void *map_addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    
+    if (map_addr == MAP_FAILED) {
+        perror("Failed to mmap");
+        return nullptr;
+    }
+    return (unsigned int *) map_addr;
+}
