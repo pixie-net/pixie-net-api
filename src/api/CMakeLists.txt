@@ -4,6 +4,7 @@ set(API_SOURCE_LIST
         UserspaceIo.cpp
         PixieNetCommon.cpp
         ProgramFippi.cpp
+        TraceInterface.cpp
         )
 
 add_library(PixieNetApi_STATIC STATIC ${API_SOURCE_LIST})

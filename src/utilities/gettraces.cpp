@@ -32,56 +32,46 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <cstdio>
+#include <chrono>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include <sys/mman.h>
 #include <unistd.h>
 
 #include "PixieNetCommon.hpp"
 #include "PixieNetDefs.hpp"
+#include "TraceInterface.hpp"
 #include "UserspaceIo.hpp"
 
-int main(void) {
-    int size = 4096;
-    int k;
-    unsigned int adc0[NTRACE_SAMPLES], adc1[NTRACE_SAMPLES], adc2[NTRACE_SAMPLES], adc3[NTRACE_SAMPLES];
+int main(int argc, char *argv[]) {
+    std::string fileformat = ".csv";
+    std::string filename = "traces";
     
+    if (argc == 2)
+        filename = argv[1];
+    
+    const auto epoch = std::chrono::system_clock::now().time_since_epoch();
+    
+    std::stringstream output_name;
+    output_name << filename << '-' << std::chrono::duration_cast<std::chrono::seconds>(epoch).count()  << fileformat;
+    
+    int size = 4096;
     // *************** PS/PL IO initialization *********************
     UserspaceIo uio;
     int fd = uio.OpenPdFileDescription();
-    unsigned int *map_addr = uio.MapMemoryAddress(fd, 4096);
+    unsigned int *map_addr = uio.MapMemoryAddress(fd, size);
     volatile unsigned int *mapped = map_addr;
     
-    // **************** XIA code begins **********************
-    // read 8K samples from ADC register
-    // at this point, no guarantee that sampling is truly periodic
-    mapped[AOUTBLOCK] = OB_EVREG;        // switch reads to event data block of addresses
+    auto result = TraceInterface().get_traces(mapped);
     
-    // dummy reads for sampling update
-    k = mapped[AADC0] & 0xFFFF;
-    k = mapped[AADC1] & 0xFFFF;
-    k = mapped[AADC2] & 0xFFFF;
-    k = mapped[AADC3] & 0xFFFF;
-    
-    for (k = 0; k < NTRACE_SAMPLES; k++)
-        adc0[k] = mapped[AADC0] & 0xFFFF;
-    for (k = 0; k < NTRACE_SAMPLES; k++)
-        adc1[k] = mapped[AADC1] & 0xFFFF;
-    for (k = 0; k < NTRACE_SAMPLES; k++)
-        adc2[k] = mapped[AADC2] & 0xFFFF;
-    for (k = 0; k < NTRACE_SAMPLES; k++)
-        adc3[k] = mapped[AADC3] & 0xFFFF;
-    
-    // open the output file
-    FILE *fil = fopen("ADC.csv", "w");
-    fprintf(fil, "sample,adc0,adc1,adc2,adc3\n");
-    
-    //  write to file
-    for (k = 0; k < NTRACE_SAMPLES; k++)
-        fprintf(fil, "%d,%d,%d,%d,%d\n ", k, adc0[k], adc1[k], adc2[k], adc3[k]);
+    std::ofstream output(output_name.str().c_str());
+    output << "sample,adc0,adc1,adc2,adc3" << std::endl;
+    for (int k = 0; k < NTRACE_SAMPLES; k++)
+        output << k << result[0][k] << result[1][k] << result[2][k] << result[3][k] << std::endl;
+    output.close();
     
     munmap(map_addr, size);
     close(fd);
-    fclose(fil);
-    return 0;
 }
