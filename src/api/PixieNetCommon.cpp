@@ -32,17 +32,21 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <fstream>
+#include <string>
+
+#include <cerrno>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+
 #include <fcntl.h>
-#include <time.h>
-#include <signal.h>
-#include <errno.h>
-#include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "PixieNetDefs.hpp"
 #include "PixieNetCommon.hpp"
@@ -321,42 +325,26 @@ float board_temperature(volatile unsigned int *mapped) {
     return (Tsign ? -1.0 : 1.0) * temperature_val / 256.0f;
 }//float board_temperature( volatile unsigned int *mapped )
 
+/// Calculates the ADC temperature
+/// See https://forums.xilinx.com/t5/Processor-System-Design/Zynq-zc706-XADC-Reading-External-Voltages/m-p/593620/highlight/true#M7052
+/// and https://forums.xilinx.com/t5/Embedded-Linux/Zynq-Linux-XADC-Temperature-Sensor/td-p/323677
+/// for the equation to calculate the temperature.
 float zynq_temperature() {
-    // try kernel <4 device file location
-    float temperature = -999;
-    char line[LINESZ];
+    float raw_temperature = -999., offset = 0., scale = 1.;
     
-    FILE *devfile = fopen("/sys/devices/amba.0/f8007100.ps7-xadc/temp", "r");
-    if (devfile) {
-        fgets(line, LINESZ, devfile);
-        fclose(devfile);
-        if (sscanf(line, "%f", &temperature) != 1) {
-            //  printf( "got line '%s' trying to read ZYNQ temperature\n", line );
-        }
-    } else {
-        
-        // try kernel 4 device location
-        // printf( "trying K4 location\n");
-        // assume local shortcut exists to
-        // /sys/devices/soc0/amba/f8007100.adc/iio:device0/in_temp0_raw
-        // which has trouble with fopen due to the :
-        FILE *devfile1 = fopen("/var/www/temp0_raw", "r");
-        if (!devfile1) {
-            // printf( "Could not open device file\n");
-        } else {
-            fgets(line, LINESZ, devfile1);
-            //   printf( "%s\n", line);
-            fclose(devfile1);
-            if (sscanf(line, "%f", &temperature) != 1) {
-                //  printf( "got line '%s' trying to read ZYNQ temperature\n", line );
-            } else {
-                temperature = (temperature - 2219) * 123.04 / 1000;
-                // constants 2219 and 123.04 are from .../in_temp0_offset and _scale
-                // don't seem to change
-            }
-        }
-    }
-    return temperature;
+    std::ifstream file("/sys/devices/soc0/amba/f8007100.adc/iio:device0/in_temp0_raw");
+    file >> raw_temperature;
+    file.close();
+    
+    std::ifstream offset_file("/sys/devices/soc0/amba/f8007100.adc/iio:device0/in_temp0_offset");
+    offset_file >> offset;
+    offset_file.close();
+    
+    std::ifstream scale_file("/sys/devices/soc0/amba/f8007100.adc/iio:device0/in_temp0_scale");
+    scale_file >> scale;
+    scale_file.close();
+
+    return (raw_temperature + offset) * scale / 1000;
 }
 
 int read_print_runstats(int mode, int dest, volatile unsigned int *mapped) {
