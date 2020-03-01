@@ -7,7 +7,7 @@ endif (USE_KAFKA)
 target_link_libraries(acquire PixieNetApi_STATIC m ${BOOST_ACQ_LIBS} ${KAFKA_LIBS})
 install(TARGETS acquire DESTINATION bin)
 
-FOREACH (prog avgadc clockprog coincdaq findsettings gettraces pollcsr progfippi runstats startdaq)
+FOREACH (prog clockprog coincdaq findsettings gettraces pollcsr progfippi runstats startdaq)
     add_executable(${prog} ${prog}.cpp)
     target_link_libraries(${prog} PixieNetApi_STATIC m)
     install(TARGETS ${prog} DESTINATION bin)

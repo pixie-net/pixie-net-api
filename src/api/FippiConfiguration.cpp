@@ -61,6 +61,6 @@ FippiConfiguration::FippiConfiguration() {
         MCA2D_SCALEX[i] = 200;
         MCA2D_SCALEY[i] = 0;
         ADC_AVG[i] = 2;
-        THRESH_ADC_AVG[i] = 2000;
+        THRESH_ADC_AVG[i] = 15;
     }
 }

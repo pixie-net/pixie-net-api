@@ -34,42 +34,78 @@
  *----------------------------------------------------------------------*/
 #include <chrono>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
+#include <getopt.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "ConfigurationFileParser.hpp"
+#include "FippiConfiguration.hpp"
 #include "PixieNetCommon.hpp"
 #include "PixieNetDefs.hpp"
 #include "TraceInterface.hpp"
 #include "UserspaceIo.hpp"
 
+
 int main(int argc, char *argv[]) {
-    std::string fileformat = ".csv";
-    std::string filename = "traces";
+    std::string filename = "traces", fileformat = ".csv", cfg_file = "default";
+    bool doAverage = false;
     
-    if (argc == 2)
-        filename = argv[1];
+    int opt;
+    while ((opt = getopt(argc, argv, "ac:f:")) != EOF)
+        switch (opt) {
+            case 'a':
+                doAverage = true;
+                break;
+            case 'c':
+                cfg_file = optarg;
+                break;
+            case 'f':
+                filename = optarg;
+                break;
+            case '?':
+                std::cout << "Usage: ./gettraces.cpp -f <filename> -a -c <config file>" << std::endl;
+                break;
+            default:
+                std::cout << std::endl;
+                abort();
+        }
     
-    const auto epoch = std::chrono::system_clock::now().time_since_epoch();
-    
-    std::stringstream output_name;
-    output_name << filename << '-' << std::chrono::duration_cast<std::chrono::seconds>(epoch).count()  << fileformat;
-    
-    int size = 4096;
     // *************** PS/PL IO initialization *********************
     UserspaceIo uio;
     int fd = uio.OpenPdFileDescription();
+    int size = 4096;
     unsigned int *map_addr = uio.MapMemoryAddress(fd, size);
     volatile unsigned int *mapped = map_addr;
     
-    auto result = TraceInterface().get_traces(mapped);
+    std::map<unsigned int, std::vector<int> > result;
+    
+    if (!doAverage)
+        result = TraceInterface().get_traces(mapped);
+    else {
+        try {
+            if (cfg_file == "default")
+                result = TraceInterface().get_averaged_traces(FippiConfiguration(), mapped);
+            else
+                result = TraceInterface().get_averaged_traces(ConfigurationFileParser().parse_config(cfg_file.c_str()),
+                                                              mapped);
+        } catch (std::overflow_error &err) {
+            std::cout << err.what() << std::endl;
+        }
+    }
+    
+    std::stringstream output_name;
+    output_name << filename << '-' << std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() << fileformat;
     
     std::ofstream output(output_name.str().c_str());
     output << "sample,adc0,adc1,adc2,adc3" << std::endl;
     for (int k = 0; k < NTRACE_SAMPLES; k++)
-        output << k << result[0][k] << result[1][k] << result[2][k] << result[3][k] << std::endl;
+        output << k << "," << result[0][k] << "," << result[1][k] << "," << result[2][k] << "," << result[3][k]
+               << std::endl;
     output.close();
     
     munmap(map_addr, size);
