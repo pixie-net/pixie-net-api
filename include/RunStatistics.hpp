@@ -94,9 +94,9 @@ public:
     
     double getGdt(const unsigned int &channel) const;
     
-    unsigned int getOcr(const unsigned int &channel) const;
+    unsigned int getOor(const unsigned int &channel) const;
     
-    void setOcr(const unsigned int &channel, const unsigned int &value);
+    void getOor(const unsigned int &channel, const unsigned int &value);
     
     unsigned int getIcr(const unsigned int &channel) const;
     
@@ -212,7 +212,7 @@ private:
     double temperature_zynq;
     unsigned int hw_version;
     
-    std::map<unsigned int, unsigned int> ocr;
+    std::map<unsigned int, unsigned int> oor;
     std::map<unsigned int, unsigned int> icr;
     std::map<unsigned int, unsigned int> count_time_low;
     std::map<unsigned int, unsigned int> count_time_high;

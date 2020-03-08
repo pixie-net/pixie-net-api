@@ -58,7 +58,7 @@ RunStatistics RunStatisticsInterface::read_runstats() {
     runstats.setPsCodeVersion(PS_CODE_VERSION);
     
     for(unsigned int chan = 0; chan < NCHANNELS; chan++){
-        runstats.setOcr(chan, c[chan][1]);
+        runstats.getOor(chan, c[chan][1]);
         runstats.setIcr(chan, ICRSCALE * c[chan][2]);
         runstats.setCountTimeLow(chan, c[chan][3]);
         runstats.setCountTimeHigh(chan, c[chan][4]);

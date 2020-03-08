@@ -22,7 +22,7 @@ std::string RunStatisticsPrinter::format_channel_for_json(const unsigned int &ch
            << "'pass_pileup_rate': " << stats.getPassPileupRate(channel) << ","
            << "'gate_rate': " << stats.getGcountRate(channel) << ","
            << "'gdt': " << stats.getGdt(channel) << ","
-           << "'oor': " << stats.getOcr(channel) << ","
+           << "'oor': " << stats.getOor(channel) << ","
            << "'icr': " << stats.getIcr(channel) << ","
            << "'count_time_low': " << stats.getCountTimeLow(channel) << ","
            << "'count_time_high': " << stats.getCountTimeHigh(channel) << ","

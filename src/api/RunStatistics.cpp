@@ -185,12 +185,12 @@ double RunStatistics::getGdt(const unsigned int &channel) const {
     return (getGdtLow(channel) + getGdtHigh(channel) * std::pow(2, 32)) * 1.e-9;
 }
 
-unsigned int RunStatistics::getOcr(const unsigned int &channel) const {
-    return ocr.at(channel);
+unsigned int RunStatistics::getOor(const unsigned int &channel) const {
+    return oor.at(channel);
 }
 
-void RunStatistics::setOcr(const unsigned int &channel, const unsigned int &value) {
-    RunStatistics::ocr[channel] = value;
+void RunStatistics::getOor(const unsigned int &channel, const unsigned int &value) {
+    RunStatistics::oor[channel] = value;
 }
 
 unsigned int RunStatistics::getIcr(const unsigned int &channel) const {
