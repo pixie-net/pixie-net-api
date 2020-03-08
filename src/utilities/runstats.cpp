@@ -37,9 +37,11 @@
 
 #include "PixieNetCommon.hpp"
 #include "PixieNetDefs.hpp"
+#include "RunStatisticsInterface.hpp"
+#include "RunStatisticsPrinter.hpp"
 #include "UserspaceIo.hpp"
 
-int main(void) {
+int main() {
     int size = 4096;
     
     // *************** PS/PL IO initialization *********************
@@ -49,10 +51,7 @@ int main(void) {
     volatile unsigned int *mapped = map_addr;
     
     // ************** XIA code begins **************************
-    mapped[AOUTBLOCK] = OB_RSREG;
-    read_print_runstats(0, 0, mapped);
-    mapped[AOUTBLOCK] = OB_IOREG;
-    
+    RunStatisticsPrinter().print_statistics(RunStatisticsInterface(mapped).get_statistics());
     // clean up
     munmap(map_addr, size);
     close(fd);

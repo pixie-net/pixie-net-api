@@ -4,6 +4,9 @@ set(API_SOURCE_LIST
         UserspaceIo.cpp
         PixieNetCommon.cpp
         ProgramFippi.cpp
+        RunStatistics.cpp
+        RunStatisticsInterface.cpp
+        RunStatisticsPrinter.cpp
         TraceInterface.cpp
         )
 
