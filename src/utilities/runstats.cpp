@@ -32,6 +32,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
+#include <iostream>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -51,7 +52,7 @@ int main() {
     volatile unsigned int *mapped = map_addr;
     
     // ************** XIA code begins **************************
-    RunStatisticsPrinter().print_statistics(RunStatisticsInterface(mapped).get_statistics());
+    std::cout << RunStatisticsPrinter().format_stats_as_json(RunStatisticsInterface(mapped).get_statistics()) << std::endl;
     // clean up
     munmap(map_addr, size);
     close(fd);

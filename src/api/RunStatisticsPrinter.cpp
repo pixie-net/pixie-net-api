@@ -44,7 +44,7 @@ std::string RunStatisticsPrinter::format_channel_for_json(const unsigned int &ch
     return stream.str();
 }
 
-void RunStatisticsPrinter::print_statistics(const RunStatistics &stats) {
+std::string RunStatisticsPrinter::format_stats_as_json(const RunStatistics &stats) {
     std::stringstream stream;
     stream << "{" << "'module': {"
            << "'run_time': " << stats.getRunTime() << ","
@@ -74,5 +74,5 @@ void RunStatisticsPrinter::print_statistics(const RunStatistics &stats) {
         stream << format_channel_for_json(chan, stats) << ",";
     
     stream << "}}";
-    std::cout << stream.str() << std::endl;
+    return stream.str();
 }
